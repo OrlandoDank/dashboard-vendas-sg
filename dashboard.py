@@ -1,60 +1,134 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime
 from omie_api import carregar_dados
 
 # ─────────────────────────────────────────────────────────────
-# CONFIGURAÇÃO
+# CONFIG
 # ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Dashboard de Vendas – SG Soluções",
+    page_title="Dashboard SG Soluções",
     page_icon="📊",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
+# ─────────────────────────────────────────────────────────────
+# CSS GLOBAL
+# ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-  /* ── KPI cards ── */
-  .kpi-card {
-    background: #1e293b;
-    border-radius: 10px;
-    padding: 12px 16px;
-    text-align: center;
-    height: 100%;
-    margin-bottom: 8px;
+  /* Fundo geral branco */
+  [data-testid="stAppViewContainer"] { background: #f0f4f8; }
+  [data-testid="stHeader"]           { background: transparent; }
+  [data-testid="stSidebar"]          { background: #1a1f36; }
+  [data-testid="stSidebar"] * { color: #c8ccd8 !important; }
+  [data-testid="stSidebar"] .stRadio label { color: #c8ccd8 !important; font-size: 15px; }
+  [data-testid="stSidebar"] .stRadio div[data-testid="stMarkdownContainer"] p { color: #888 !important; font-size: 12px; }
+
+  /* Cards KPI */
+  .kpi {
+    background: white;
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 4px;
   }
-  .kpi-card .label  { color: #94a3b8; font-size: 12px; margin: 0; }
-  .kpi-card .total  { color: #f1f5f9; font-size: 20px; font-weight: 700; margin: 4px 0 2px; }
-  .kpi-card .mes    { color: #60a5fa; font-size: 13px; margin: 0; }
-  .kpi-card .sub    { color: #64748b; font-size: 11px; margin: 0; }
+  .kpi-icon {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .kpi-body { flex: 1; min-width: 0; }
+  .kpi-label { color: #8892a4; font-size: 12px; margin: 0; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi-value { color: #1a1f36; font-size: 21px; font-weight: 700; margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi-sub   { color: #56c4a8; font-size: 12px; margin: 2px 0 0; }
 
-  /* ── Badges ── */
-  .badge { border-radius:6px; padding: 4px 12px; font-size:13px; font-weight:600; }
-  .verde    { background:#d4edda; color:#155724; }
-  .amarelo  { background:#fff3cd; color:#856404; }
-  .vermelho { background:#f8d7da; color:#721c24; }
-  .cinza    { background:#e2e8f0; color:#475569; }
+  /* Cards de seção */
+  .card {
+    background: white;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    margin-bottom: 16px;
+  }
+  .card-title { color: #1a1f36; font-size: 15px; font-weight: 600; margin: 0 0 16px; }
 
-  /* ── Mobile ── */
+  /* Badges de status */
+  .badge-green  { background:#e6f9f4; color:#06d6a0; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:600; }
+  .badge-yellow { background:#fff8e6; color:#ffc107; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:600; }
+  .badge-red    { background:#ffeef2; color:#ef476f; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:600; }
+  .badge-gray   { background:#f0f4f8; color:#8892a4; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:600; }
+
+  /* Bloco de título de página */
+  .page-header { margin-bottom: 24px; }
+  .page-header h2 { color: #1a1f36; font-size: 22px; font-weight: 700; margin: 0; }
+  .page-header p  { color: #8892a4; font-size: 13px; margin: 4px 0 0; }
+
+  /* Mobile */
   @media (max-width: 768px) {
-    .kpi-card .total  { font-size: 17px; }
-    .kpi-card .mes    { font-size: 12px; }
-    .kpi-card .label  { font-size: 11px; }
-    [data-testid="column"] {
-      width: 100% !important;
-      flex: 1 1 100% !important;
-      min-width: 100% !important;
-    }
-    .block-container {
-      padding-left: 1rem !important;
-      padding-right: 1rem !important;
-    }
-    h1 { font-size: 1.4rem !important; }
-    [data-testid="stDataFrame"] { overflow-x: auto !important; }
+    .kpi-value { font-size: 17px; }
+    [data-testid="column"] { width:100% !important; flex:1 1 100% !important; min-width:100% !important; }
+    .block-container { padding-left:1rem !important; padding-right:1rem !important; }
   }
 </style>
 """, unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────
+# HELPERS
+# ─────────────────────────────────────────────────────────────
+def brl(v):
+    return f"R$ {v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
+
+def mes_soma(df, col_data, col_val):
+    h = pd.Timestamp.today()
+    m = (df[col_data].dt.year == h.year) & (df[col_data].dt.month == h.month)
+    return df.loc[m, col_val].sum()
+
+def kpi_card(icon, bg, label, value, sub=""):
+    return f"""
+    <div class="kpi">
+      <div class="kpi-icon" style="background:{bg};">{icon}</div>
+      <div class="kpi-body">
+        <p class="kpi-label">{label}</p>
+        <p class="kpi-value">{value}</p>
+        {"<p class='kpi-sub'>"+sub+"</p>" if sub else ""}
+      </div>
+    </div>"""
+
+CORES = ["#00b4d8","#06d6a0","#ffd166","#ef476f","#a78bfa","#fb8500"]
+MES   = datetime.now().strftime("%b/%Y")
+
+
+# ─────────────────────────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("<h2 style='color:white;font-size:18px;margin-bottom:4px;'>📊 SG Soluções</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#666;font-size:12px;margin-bottom:24px;'>Dashboard de Vendas</p>", unsafe_allow_html=True)
+
+    pagina = st.radio("Navegação", [
+        "🏠  Visão Geral",
+        "👥  Clientes",
+        "📦  Produtos",
+        "🔴  Boletos em Atraso",
+        "💰  Financeiro",
+    ], label_visibility="collapsed")
+
+    st.markdown("---")
+    if st.button("🔄 Atualizar dados", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
+
+    st.markdown(f"<p style='color:#555;font-size:11px;margin-top:8px;'>Atualizado: {datetime.now().strftime('%d/%m/%Y %H:%M')}</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#555;font-size:11px;'>Cache: 5 min</p>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -64,383 +138,333 @@ st.markdown("""
 def get_dados():
     return carregar_dados()
 
-col_title, col_btn = st.columns([5, 1])
-with col_title:
-    st.title("📊 Dashboard de Vendas – SG Soluções")
-with col_btn:
-    st.write("")
-    if st.button("🔄 Atualizar", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
-
 with st.spinner("Buscando dados do Omie..."):
-    df_pedidos, df_linhas, df_clientes, df_ind, df_prod, df_boletos, saldo_cash = get_dados()
-
-st.caption(f"Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}  |  Cache renova a cada 5 min")
-st.divider()
+    df_ped, df_lin, df_cli, df_ind, df_prod, df_bol, saldo_cash = get_dados()
 
 
 # ─────────────────────────────────────────────────────────────
-# HELPERS
+# MÉTRICAS GLOBAIS
 # ─────────────────────────────────────────────────────────────
-def brl(v):
-    return f"R$ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-def mes_atual(df, col_data, col_valor):
-    hoje = pd.Timestamp.today()
-    mask = (df[col_data].dt.year == hoje.year) & (df[col_data].dt.month == hoje.month)
-    return df.loc[mask, col_valor].sum()
-
-MES = datetime.now().strftime("%b/%Y")
-
-
-# ─────────────────────────────────────────────────────────────
-# LINHA 1 – KPIs COMPACTOS (total + mês na mesma caixinha)
-# ─────────────────────────────────────────────────────────────
-fat_total = df_pedidos["valor_total"].sum()
-fat_mes   = mes_atual(df_pedidos, "data_pedido", "valor_total")
-
-ped_total = len(df_pedidos)
-ped_mes   = int(df_pedidos[
-    (df_pedidos["data_pedido"].dt.year  == datetime.now().year) &
-    (df_pedidos["data_pedido"].dt.month == datetime.now().month)
-].shape[0])
-
-ticket_total = fat_total / ped_total if ped_total else 0
-ticket_mes   = fat_mes   / ped_mes   if ped_mes   else 0
-
-cli_ativos   = int((df_ind["num_pedidos"] > 0).sum())
-cli_verdes   = int(((df_ind["num_pedidos"] > 0) & (df_ind["dias_sem_comprar"] <  30)).sum())
-cli_amarelos = int(((df_ind["num_pedidos"] > 0) & (df_ind["dias_sem_comprar"].between(30, 60))).sum())
-cli_vermelhos= int(((df_ind["num_pedidos"] > 0) & (df_ind["dias_sem_comprar"] >  60)).sum())
-cli_nunca    = int((df_ind["num_pedidos"] == 0).sum())
-
-c1, c2, c3, c4, c5, c6 = st.columns(6)
-
-def card(col, icon, label, total_val, mes_val, sub=""):
-    col.markdown(f"""
-    <div class="kpi-card">
-      <p class="label">{icon} {label}</p>
-      <p class="total">{total_val}</p>
-      <p class="mes">📅 {MES}: {mes_val}</p>
-      {'<p class="sub">' + sub + '</p>' if sub else ''}
-    </div>
-    """, unsafe_allow_html=True)
-
-card(c1, "💰", "Total Faturado",  brl(fat_total),        brl(fat_mes))
-card(c2, "📦", "Pedidos",         str(ped_total),        str(ped_mes))
-card(c3, "🎯", "Ticket Médio",    brl(ticket_total),     brl(ticket_mes))
-card(c4, "👥", "Clientes Ativos", str(cli_ativos),       f"{cli_verdes} ativos hoje", sub="com ao menos 1 compra")
-card(c5, "⚠️", "Retenção",
-     f"🟢 {cli_verdes}  🟡 {cli_amarelos}  🔴 {cli_vermelhos}",
-     f"⚪ {cli_nunca} nunca compraram",
-     sub="verde <30d · amarelo 30-60d · vermelho >60d")
-c6.markdown(f"""
-<div class="kpi-card" style="border: 1px solid #22c55e;">
-  <p class="label">🏦 Omie.CASH</p>
-  <p class="total" style="color:#4ade80;">{brl(saldo_cash)}</p>
-  <p class="mes">Saldo disponível</p>
-</div>
-""", unsafe_allow_html=True)
-
-st.write("")
-st.divider()
+fat_total     = df_ped["valor_total"].sum()
+fat_mes       = mes_soma(df_ped, "data_pedido", "valor_total")
+ped_total     = len(df_ped)
+ped_mes       = int(df_ped[(df_ped["data_pedido"].dt.year==datetime.now().year)&(df_ped["data_pedido"].dt.month==datetime.now().month)].shape[0])
+ticket_total  = fat_total / ped_total if ped_total else 0
+ticket_mes    = fat_mes   / ped_mes   if ped_mes   else 0
+cli_ativos    = int((df_ind["num_pedidos"]>0).sum())
+cli_verdes    = int(((df_ind["num_pedidos"]>0)&(df_ind["dias_sem_comprar"]<30)).sum())
+cli_amarelos  = int(((df_ind["num_pedidos"]>0)&(df_ind["dias_sem_comprar"].between(30,60))).sum())
+cli_vermelhos = int(((df_ind["num_pedidos"]>0)&(df_ind["dias_sem_comprar"]>60)).sum())
+total_atraso  = df_bol["valor"].sum() if not df_bol.empty else 0
 
 
-# ─────────────────────────────────────────────────────────────
-# BOLETOS EM ATRASO
-# ─────────────────────────────────────────────────────────────
-st.subheader("🔴 Boletos em atraso")
+# ═══════════════════════════════════════════════════════════════
+# PÁGINA: VISÃO GERAL
+# ═══════════════════════════════════════════════════════════════
+if pagina == "🏠  Visão Geral":
+    st.markdown(f"""<div class="page-header">
+      <h2>Visão Geral</h2>
+      <p>Resumo executivo de vendas · {MES}</p>
+    </div>""", unsafe_allow_html=True)
 
-if df_boletos.empty:
-    st.success("Nenhum boleto em atraso no momento.")
-else:
-    # Juntar nome do cliente
-    df_bol = df_boletos.merge(
-        df_clientes[["codigo_cliente", "nome_cliente"]],
-        on="codigo_cliente", how="left"
-    )
+    # KPIs
+    k1,k2,k3,k4 = st.columns(4)
+    k1.markdown(kpi_card("💰","#e8f8ff","Total Faturado", brl(fat_total), f"Mês: {brl(fat_mes)}"), unsafe_allow_html=True)
+    k2.markdown(kpi_card("📦","#e8fff5","Total de Pedidos", str(ped_total), f"Mês: {ped_mes}"), unsafe_allow_html=True)
+    k3.markdown(kpi_card("🎯","#fff8e8","Ticket Médio", brl(ticket_total), f"Mês: {brl(ticket_mes)}"), unsafe_allow_html=True)
+    k4.markdown(kpi_card("🏦","#eef2ff","Omie.CASH", brl(saldo_cash), "Saldo disponível"), unsafe_allow_html=True)
 
-    total_atraso    = df_bol["valor"].sum()
-    qtd_boletos     = len(df_bol)
-    qtd_clientes    = df_bol["codigo_cliente"].nunique()
-
-    ba1, ba2, ba3 = st.columns(3)
-    ba1.metric("💸 Total em atraso",   brl(total_atraso))
-    ba2.metric("📄 Boletos vencidos",  str(qtd_boletos))
-    ba3.metric("👤 Clientes devedores", str(qtd_clientes))
+    st.write("")
+    k5,k6,k7,k8 = st.columns(4)
+    k5.markdown(kpi_card("🟢","#e8fff5","Clientes Ativos", str(cli_verdes), "< 30 dias"), unsafe_allow_html=True)
+    k6.markdown(kpi_card("🟡","#fff8e8","Em Atenção", str(cli_amarelos), "30 a 60 dias"), unsafe_allow_html=True)
+    k7.markdown(kpi_card("🔴","#fff0f3","Inativos", str(cli_vermelhos), "> 60 dias"), unsafe_allow_html=True)
+    k8.markdown(kpi_card("⚠️","#fff0f3","Em Atraso", brl(total_atraso), f"{len(df_bol)} boletos"), unsafe_allow_html=True)
 
     st.write("")
 
-    # Formatar tabela
-    df_bol_exib = df_bol[[
-        "nome_cliente", "numero_documento", "parcela",
-        "data_vencimento", "dias_atraso", "valor"
-    ]].copy()
-    df_bol_exib.columns = [
-        "Cliente", "Nº Documento", "Parcela",
-        "Vencimento", "Dias em Atraso", "Valor (R$)"
-    ]
-    df_bol_exib["Vencimento"]  = df_bol_exib["Vencimento"].dt.strftime("%d/%m/%Y")
-    df_bol_exib["Valor (R$)"]  = df_bol_exib["Valor (R$)"].apply(brl)
+    # Gráfico de faturamento mensal (área)
+    g1, g2 = st.columns([3,2])
+    with g1:
+        st.markdown('<div class="card"><p class="card-title">📈 Faturamento Mensal</p>', unsafe_allow_html=True)
+        if not df_ped.empty:
+            df_mes = (
+                df_ped.dropna(subset=["data_pedido"])
+                .assign(mes=lambda x: x["data_pedido"].dt.to_period("M").astype(str))
+                .groupby("mes")["valor_total"].sum().reset_index()
+            )
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=df_mes["mes"], y=df_mes["valor_total"],
+                fill="tozeroy", mode="lines+markers",
+                line=dict(color="#00b4d8", width=2.5),
+                fillcolor="rgba(0,180,216,0.12)",
+                marker=dict(size=6, color="#00b4d8"),
+            ))
+            fig.update_layout(
+                margin=dict(t=0,b=0,l=0,r=0), height=240,
+                plot_bgcolor="white", paper_bgcolor="white",
+                xaxis=dict(showgrid=False, tickfont=dict(size=11)),
+                yaxis=dict(showgrid=True, gridcolor="#f0f4f8", tickfont=dict(size=11)),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    def colorir_atraso(row):
-        d = row["Dias em Atraso"]
-        cor = "#d4edda" if d < 30 else "#fff3cd" if d <= 60 else "#f8d7da"
-        return [
-            f"background-color:{cor}" if col in ("Dias em Atraso", "Vencimento") else ""
-            for col in row.index
-        ]
+    with g2:
+        st.markdown('<div class="card"><p class="card-title">👥 Retenção de Clientes</p>', unsafe_allow_html=True)
+        total_c = cli_verdes + cli_amarelos + cli_vermelhos
+        if total_c > 0:
+            fig2 = go.Figure(go.Pie(
+                labels=["Ativos","Atenção","Inativos"],
+                values=[cli_verdes, cli_amarelos, cli_vermelhos],
+                hole=0.65,
+                marker_colors=["#06d6a0","#ffd166","#ef476f"],
+                textinfo="percent",
+                textfont_size=12,
+            ))
+            fig2.update_layout(
+                margin=dict(t=0,b=0,l=0,r=0), height=240,
+                paper_bgcolor="white",
+                legend=dict(orientation="h", yanchor="bottom", y=-0.2, font=dict(size=11)),
+                annotations=[dict(text=f"<b>{total_c}</b><br>clientes", x=0.5,y=0.5, showarrow=False, font=dict(size=13, color="#1a1f36"))],
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.dataframe(
-        df_bol_exib.style.apply(colorir_atraso, axis=1),
-        use_container_width=True, hide_index=True, height=400
-    )
-    st.caption(
-        f"{qtd_boletos} boletos vencidos · {qtd_clientes} clientes · "
-        f"Total: {brl(total_atraso)}  |  "
-        "🟢 <30 dias  🟡 30–60 dias  🔴 >60 dias"
-    )
+    # Top 5 clientes + Top 5 produtos
+    t1, t2 = st.columns(2)
+    with t1:
+        st.markdown('<div class="card"><p class="card-title">🏆 Top 5 Clientes</p>', unsafe_allow_html=True)
+        top5 = df_ind[df_ind["total_comprado"]>0].head(5).copy()
+        top5["nome_curto"] = top5["nome_cliente"].str[:25]
+        fig3 = px.bar(top5.sort_values("total_comprado"), x="total_comprado", y="nome_curto",
+                      orientation="h", color_discrete_sequence=["#00b4d8"], text_auto=".2s")
+        fig3.update_layout(margin=dict(t=0,b=0,l=0,r=0), height=220,
+                           plot_bgcolor="white", paper_bgcolor="white",
+                           xaxis=dict(showgrid=True, gridcolor="#f0f4f8", title=""),
+                           yaxis=dict(title=""))
+        st.plotly_chart(fig3, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-st.divider()
-
-
-# ─────────────────────────────────────────────────────────────
-# GRÁFICOS
-# ─────────────────────────────────────────────────────────────
-g1, g2 = st.columns(2)
-
-with g1:
-    st.subheader("📈 Faturamento por mês")
-    if not df_pedidos.empty:
-        df_mes = (
-            df_pedidos.dropna(subset=["data_pedido"])
-            .assign(mes=lambda x: x["data_pedido"].dt.to_period("M").astype(str))
-            .groupby("mes")["valor_total"].sum()
-            .reset_index()
-        )
-        fig = px.bar(df_mes, x="mes", y="valor_total",
-                     labels={"mes": "Mês", "valor_total": "Faturamento (R$)"},
-                     color_discrete_sequence=["#3b82f6"], text_auto=".2s")
-        fig.update_layout(margin=dict(t=10, b=10), height=300)
-        st.plotly_chart(fig, use_container_width=True)
-
-with g2:
-    st.subheader("🏆 Top 10 clientes por valor")
-    top10 = df_ind[df_ind["total_comprado"] > 0].head(10).copy()
-    top10["nome_curto"] = top10["nome_cliente"].str[:28]
-    fig2 = px.bar(
-        top10.sort_values("total_comprado"),
-        x="total_comprado", y="nome_curto", orientation="h",
-        color="total_comprado", color_continuous_scale="Blues",
-        labels={"total_comprado": "Total (R$)", "nome_curto": ""},
-        text_auto=".2s",
-    )
-    fig2.update_layout(margin=dict(t=10, b=10), height=300, coloraxis_showscale=False)
-    st.plotly_chart(fig2, use_container_width=True)
-
-st.divider()
+    with t2:
+        st.markdown('<div class="card"><p class="card-title">📦 Top 5 Produtos</p>', unsafe_allow_html=True)
+        top5p = df_prod.head(5).copy()
+        top5p["desc_curta"] = top5p["descricao"].str[:25]
+        fig4 = px.bar(top5p.sort_values("quantidade_vendida"), x="quantidade_vendida", y="desc_curta",
+                      orientation="h", color_discrete_sequence=["#06d6a0"], text_auto=True)
+        fig4.update_layout(margin=dict(t=0,b=0,l=0,r=0), height=220,
+                           plot_bgcolor="white", paper_bgcolor="white",
+                           xaxis=dict(showgrid=True, gridcolor="#f0f4f8", title=""),
+                           yaxis=dict(title=""))
+        st.plotly_chart(fig4, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ─────────────────────────────────────────────────────────────
-# PRODUTOS MAIS VENDIDOS
-# ─────────────────────────────────────────────────────────────
-st.subheader("📦 Produtos mais vendidos")
+# ═══════════════════════════════════════════════════════════════
+# PÁGINA: CLIENTES
+# ═══════════════════════════════════════════════════════════════
+elif pagina == "👥  Clientes":
+    st.markdown('<div class="page-header"><h2>Clientes</h2><p>Histórico de compras e retenção</p></div>', unsafe_allow_html=True)
 
-if not df_prod.empty:
-    p1, p2 = st.columns(2)
+    fc1,fc2,fc3 = st.columns([3,2,2])
+    with fc1: busca = st.text_input("🔍 Buscar", placeholder="Nome do cliente...")
+    with fc2: status_f = st.selectbox("Status", ["Todos","🟢 Ativos (<30d)","🟡 Atenção (30–60d)","🔴 Inativos (>60d)","⚪ Nunca compraram"])
+    with fc3: ordem = st.selectbox("Ordenar por", ["Total comprado","Dias sem comprar","Nº pedidos","Nome"])
 
-    with p1:
-        top_qtd = df_prod.head(10).copy()
-        top_qtd["desc_curta"] = top_qtd["descricao"].str[:30]
-        fig_p = px.bar(
-            top_qtd.sort_values("quantidade_vendida"),
-            x="quantidade_vendida", y="desc_curta", orientation="h",
-            color="quantidade_vendida", color_continuous_scale="Greens",
-            labels={"quantidade_vendida": "Qtd vendida", "desc_curta": ""},
-            text_auto=True,
-        )
-        fig_p.update_layout(title="Top 10 por quantidade", margin=dict(t=30, b=10),
-                            height=300, coloraxis_showscale=False)
-        st.plotly_chart(fig_p, use_container_width=True)
+    df_tab = df_ind.copy()
+    if busca:
+        df_tab = df_tab[df_tab["nome_cliente"].str.contains(busca, case=False, na=False)]
+    if status_f == "🟢 Ativos (<30d)":
+        df_tab = df_tab[(df_tab["num_pedidos"]>0)&(df_tab["dias_sem_comprar"]<30)]
+    elif status_f == "🟡 Atenção (30–60d)":
+        df_tab = df_tab[(df_tab["num_pedidos"]>0)&(df_tab["dias_sem_comprar"].between(30,60))]
+    elif status_f == "🔴 Inativos (>60d)":
+        df_tab = df_tab[(df_tab["num_pedidos"]>0)&(df_tab["dias_sem_comprar"]>60)]
+    elif status_f == "⚪ Nunca compraram":
+        df_tab = df_tab[df_tab["num_pedidos"]==0]
 
-    with p2:
-        top_rec = df_prod.sort_values("receita_total", ascending=False).head(10).copy()
-        top_rec["desc_curta"] = top_rec["descricao"].str[:30]
-        fig_r = px.bar(
-            top_rec.sort_values("receita_total"),
-            x="receita_total", y="desc_curta", orientation="h",
-            color="receita_total", color_continuous_scale="Blues",
-            labels={"receita_total": "Receita (R$)", "desc_curta": ""},
-            text_auto=".2s",
-        )
-        fig_r.update_layout(title="Top 10 por receita", margin=dict(t=30, b=10),
-                            height=300, coloraxis_showscale=False)
-        st.plotly_chart(fig_r, use_container_width=True)
+    mapa = {"Total comprado":("total_comprado",False),"Dias sem comprar":("dias_sem_comprar",True),"Nº pedidos":("num_pedidos",False),"Nome":("nome_cliente",True)}
+    c,a = mapa[ordem]
+    df_tab = df_tab.sort_values(c, ascending=a)
 
-    # Tabela completa de produtos com margem
-    st.markdown("##### Todos os produtos – quantidade · receita · margem")
-
-    tem_custo = df_prod["margem_pct"].notna().any()
-    if not tem_custo:
-        st.info("💡 **Margem indisponível:** cadastre o preço de custo dos produtos no Omie "
-                "(Cadastros → Produtos → campo Custo) para habilitar esta coluna automaticamente.")
-
-    ord_prod = st.radio("Ordenar por:", ["Qtd vendida", "Receita", "Margem %"],
-                        horizontal=True, key="ord_prod")
-
-    df_prod_exib = df_prod.copy()
-    if ord_prod == "Qtd vendida":
-        df_prod_exib = df_prod_exib.sort_values("quantidade_vendida", ascending=False)
-    elif ord_prod == "Receita":
-        df_prod_exib = df_prod_exib.sort_values("receita_total", ascending=False)
-    else:
-        df_prod_exib = df_prod_exib.sort_values("margem_pct", ascending=False)
-
-    def fmt_prod(df):
-        out = df[[
-            "descricao", "unidade", "quantidade_vendida",
-            "preco_medio_venda", "receita_total", "num_pedidos",
-            "cmc_unitario", "margem_pct"
-        ]].copy()
-        out.columns = [
-            "Produto", "Un.", "Qtd Vendida",
-            "Preço Médio (R$)", "Receita Total (R$)", "Nº Pedidos",
-            "Custo Unit. (R$)", "Margem %"
-        ]
-        out["Preço Médio (R$)"]   = out["Preço Médio (R$)"].apply(brl)
-        out["Receita Total (R$)"] = out["Receita Total (R$)"].apply(brl)
-        out["Custo Unit. (R$)"]   = out["Custo Unit. (R$)"].apply(
-            lambda v: brl(v) if v > 0 else "—")
-        out["Margem %"] = out["Margem %"].apply(
-            lambda v: f"{v:.1f}%" if pd.notna(v) else "—")
+    def fmt_cli(df):
+        out = df[["nome_cliente","cidade","estado","total_comprado","num_pedidos","ticket_medio","ultima_compra","dias_sem_comprar"]].copy()
+        out.columns = ["Cliente","Cidade","Estado","Total (R$)","Pedidos","Ticket Médio (R$)","Última Compra","Dias s/ comprar"]
+        out["Total (R$)"]       = out["Total (R$)"].apply(lambda v: brl(v) if v>0 else "—")
+        out["Ticket Médio (R$)"]= out["Ticket Médio (R$)"].apply(lambda v: brl(v) if v>0 else "—")
+        out["Última Compra"]    = pd.to_datetime(out["Última Compra"]).dt.strftime("%d/%m/%Y").fillna("—")
+        out["Dias s/ comprar"]  = out["Dias s/ comprar"].apply(lambda d: "—" if d==9999 else str(d))
         return out
 
-    def colorir_margem(row):
-        m = row["Margem %"]
-        if m == "—":
-            cor = ""
+    def cor_cli(row):
+        d = row["Dias s/ comprar"]
+        if d=="—": cor="#f8f9fa"
         else:
-            val = float(m.replace("%",""))
-            cor = "#d4edda" if val >= 30 else "#fff3cd" if val >= 10 else "#f8d7da"
-        return [f"background-color:{cor}" if col == "Margem %" else "" for col in row.index]
+            dias=int(d)
+            cor="#e8fff5" if dias<30 else "#fff8e8" if dias<=60 else "#fff0f3"
+        return [f"background-color:{cor}" if col in ("Dias s/ comprar","Última Compra") else "" for col in row.index]
 
-    df_fmt = fmt_prod(df_prod_exib)
-    st.dataframe(
-        df_fmt.style.apply(colorir_margem, axis=1),
-        use_container_width=True, hide_index=True, height=420
-    )
-    st.caption(f"Total: {len(df_prod)} produtos diferentes vendidos")
-
-st.divider()
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.dataframe(fmt_cli(df_tab).style.apply(cor_cli, axis=1), use_container_width=True, hide_index=True, height=520)
+    st.caption(f"{len(df_tab)} clientes  ·  🟢 {cli_verdes}  🟡 {cli_amarelos}  🔴 {cli_vermelhos}")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
-# ─────────────────────────────────────────────────────────────
-# TODOS OS CLIENTES
-# ─────────────────────────────────────────────────────────────
-st.subheader("👥 Todos os clientes")
+# ═══════════════════════════════════════════════════════════════
+# PÁGINA: PRODUTOS
+# ═══════════════════════════════════════════════════════════════
+elif pagina == "📦  Produtos":
+    st.markdown('<div class="page-header"><h2>Produtos</h2><p>Vendas e margem por produto</p></div>', unsafe_allow_html=True)
 
-fc1, fc2, fc3, fc4 = st.columns([3, 2, 2, 2])
-with fc1:
-    busca = st.text_input("🔍 Buscar cliente", placeholder="Digite o nome...")
-with fc2:
-    status_filtro = st.selectbox("Status", [
-        "Todos", "🟢 Ativos (<30d)", "🟡 Atenção (30–60d)",
-        "🔴 Inativos (>60d)", "⚪ Nunca compraram"])
-with fc3:
-    ordenar_por = st.selectbox("Ordenar por", [
-        "Total comprado", "Dias sem comprar", "Nº pedidos", "Nome"])
-with fc4:
-    top_n = st.selectbox("Mostrar", ["Todos", "Top 10", "Top 20", "Top 50"])
+    p1,p2 = st.columns(2)
+    with p1:
+        st.markdown('<div class="card"><p class="card-title">Qtd vendida — Top 10</p>', unsafe_allow_html=True)
+        tq = df_prod.head(10).copy()
+        tq["d"] = tq["descricao"].str[:28]
+        fig = px.bar(tq.sort_values("quantidade_vendida"), x="quantidade_vendida", y="d",
+                     orientation="h", color_discrete_sequence=["#06d6a0"], text_auto=True)
+        fig.update_layout(margin=dict(t=0,b=0,l=0,r=0), height=300,
+                          plot_bgcolor="white", paper_bgcolor="white",
+                          xaxis=dict(showgrid=True, gridcolor="#f0f4f8", title=""),
+                          yaxis=dict(title=""))
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-df_tab = df_ind.copy()
-if busca:
-    df_tab = df_tab[df_tab["nome_cliente"].str.contains(busca, case=False, na=False)]
-if status_filtro == "🟢 Ativos (<30d)":
-    df_tab = df_tab[(df_tab["num_pedidos"] > 0) & (df_tab["dias_sem_comprar"] < 30)]
-elif status_filtro == "🟡 Atenção (30–60d)":
-    df_tab = df_tab[(df_tab["num_pedidos"] > 0) & (df_tab["dias_sem_comprar"].between(30, 60))]
-elif status_filtro == "🔴 Inativos (>60d)":
-    df_tab = df_tab[(df_tab["num_pedidos"] > 0) & (df_tab["dias_sem_comprar"] > 60)]
-elif status_filtro == "⚪ Nunca compraram":
-    df_tab = df_tab[df_tab["num_pedidos"] == 0]
+    with p2:
+        st.markdown('<div class="card"><p class="card-title">Receita — Top 10</p>', unsafe_allow_html=True)
+        tr = df_prod.sort_values("receita_total",ascending=False).head(10).copy()
+        tr["d"] = tr["descricao"].str[:28]
+        fig2 = px.bar(tr.sort_values("receita_total"), x="receita_total", y="d",
+                      orientation="h", color_discrete_sequence=["#00b4d8"], text_auto=".2s")
+        fig2.update_layout(margin=dict(t=0,b=0,l=0,r=0), height=300,
+                           plot_bgcolor="white", paper_bgcolor="white",
+                           xaxis=dict(showgrid=True, gridcolor="#f0f4f8", title=""),
+                           yaxis=dict(title=""))
+        st.plotly_chart(fig2, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-ordem_map = {
-    "Total comprado":   ("total_comprado",    False),
-    "Dias sem comprar": ("dias_sem_comprar",   True),
-    "Nº pedidos":       ("num_pedidos",        False),
-    "Nome":             ("nome_cliente",       True),
-}
-col_ord, asc_ord = ordem_map[ordenar_por]
-df_tab = df_tab.sort_values(col_ord, ascending=asc_ord)
-if top_n != "Todos":
-    df_tab = df_tab.head(int(top_n.replace("Top ", "")))
+    ord_p = st.radio("Ordenar tabela por:", ["Qtd vendida","Receita","Margem %"], horizontal=True)
+    mapa_p = {"Qtd vendida":"quantidade_vendida","Receita":"receita_total","Margem %":"margem_pct"}
+    df_pe = df_prod.sort_values(mapa_p[ord_p], ascending=False).copy()
 
+    def fmt_prod(df):
+        out = df[["descricao","unidade","quantidade_vendida","preco_medio_venda","receita_total","num_pedidos","cmc_unitario","margem_pct"]].copy()
+        out.columns=["Produto","Un.","Qtd","Preço Médio (R$)","Receita (R$)","Pedidos","CMC (R$)","Margem %"]
+        out["Preço Médio (R$)"]=out["Preço Médio (R$)"].apply(brl)
+        out["Receita (R$)"]=out["Receita (R$)"].apply(brl)
+        out["CMC (R$)"]=out["CMC (R$)"].apply(lambda v: brl(v) if v>0 else "—")
+        out["Margem %"]=out["Margem %"].apply(lambda v: f"{v:.1f}%" if pd.notna(v) else "—")
+        return out
 
-def formatar_clientes(df):
-    out = df[[
-        "nome_cliente", "cidade", "estado",
-        "total_comprado", "num_pedidos", "ticket_medio",
-        "ultima_compra", "dias_sem_comprar",
-    ]].copy()
-    out.columns = [
-        "Cliente", "Cidade", "Estado",
-        "Total Comprado (R$)", "Nº Pedidos", "Ticket Médio (R$)",
-        "Última Compra", "Dias sem comprar",
-    ]
-    out["Total Comprado (R$)"] = out["Total Comprado (R$)"].apply(
-        lambda v: brl(v) if v > 0 else "—")
-    out["Ticket Médio (R$)"] = out["Ticket Médio (R$)"].apply(
-        lambda v: brl(v) if v > 0 else "—")
-    out["Última Compra"] = pd.to_datetime(out["Última Compra"]).dt.strftime("%d/%m/%Y").fillna("—")
-    out["Dias sem comprar"] = out["Dias sem comprar"].apply(
-        lambda d: "—" if d == 9999 else str(d))
-    return out
+    def cor_margem(row):
+        m=row["Margem %"]
+        if m=="—": cor=""
+        else:
+            v=float(m.replace("%",""))
+            cor="#e8fff5" if v>=30 else "#fff8e8" if v>=10 else "#fff0f3"
+        return [f"background-color:{cor}" if col=="Margem %" else "" for col in row.index]
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.dataframe(fmt_prod(df_pe).style.apply(cor_margem,axis=1), use_container_width=True, hide_index=True, height=480)
+    st.caption(f"{len(df_prod)} produtos  ·  {int((df_prod['cmc_unitario']>0).sum())} com CMC cadastrado")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
-def colorir_cliente(row):
-    d = row["Dias sem comprar"]
-    if d == "—":
-        cor = "#f0f0f0"
+# ═══════════════════════════════════════════════════════════════
+# PÁGINA: BOLETOS EM ATRASO
+# ═══════════════════════════════════════════════════════════════
+elif pagina == "🔴  Boletos em Atraso":
+    st.markdown('<div class="page-header"><h2>Boletos em Atraso</h2><p>Contas a receber vencidas</p></div>', unsafe_allow_html=True)
+
+    if df_bol.empty:
+        st.success("Nenhum boleto em atraso no momento.")
     else:
-        dias = int(d)
-        cor  = "#d4edda" if dias < 30 else "#fff3cd" if dias <= 60 else "#f8d7da"
-    return [
-        f"background-color:{cor}" if col in ("Dias sem comprar", "Última Compra") else ""
-        for col in row.index
-    ]
+        df_b = df_bol.merge(df_cli[["codigo_cliente","nome_cliente"]], on="codigo_cliente", how="left")
+        b1,b2,b3 = st.columns(3)
+        b1.markdown(kpi_card("💸","#fff0f3","Total em Atraso", brl(df_b["valor"].sum())), unsafe_allow_html=True)
+        b2.markdown(kpi_card("📄","#fff8e8","Boletos Vencidos", str(len(df_b))), unsafe_allow_html=True)
+        b3.markdown(kpi_card("👤","#fff0f3","Clientes Devedores", str(df_b["codigo_cliente"].nunique())), unsafe_allow_html=True)
+
+        st.write("")
+
+        # Gráfico por cliente
+        st.markdown('<div class="card"><p class="card-title">Valor em atraso por cliente</p>', unsafe_allow_html=True)
+        df_bc = df_b.groupby("nome_cliente")["valor"].sum().sort_values(ascending=False).head(10).reset_index()
+        df_bc["nome_curto"] = df_bc["nome_cliente"].str[:30]
+        fig = px.bar(df_bc.sort_values("valor"), x="valor", y="nome_curto",
+                     orientation="h", color_discrete_sequence=["#ef476f"], text_auto=".2s")
+        fig.update_layout(margin=dict(t=0,b=0,l=0,r=0), height=250,
+                          plot_bgcolor="white", paper_bgcolor="white",
+                          xaxis=dict(showgrid=True, gridcolor="#f0f4f8", title=""),
+                          yaxis=dict(title=""))
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        def fmt_bol(df):
+            out = df[["nome_cliente","numero_documento","parcela","data_vencimento","dias_atraso","valor"]].copy()
+            out.columns=["Cliente","Nº Documento","Parcela","Vencimento","Dias em Atraso","Valor (R$)"]
+            out["Vencimento"]=out["Vencimento"].dt.strftime("%d/%m/%Y")
+            out["Valor (R$)"]=out["Valor (R$)"].apply(brl)
+            return out
+
+        def cor_bol(row):
+            d=row["Dias em Atraso"]
+            cor="#e8fff5" if d<30 else "#fff8e8" if d<=60 else "#fff0f3"
+            return [f"background-color:{cor}" if col in ("Dias em Atraso","Vencimento") else "" for col in row.index]
+
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.dataframe(fmt_bol(df_b).style.apply(cor_bol,axis=1), use_container_width=True, hide_index=True, height=450)
+        st.caption(f"🟢 <30d  🟡 30–60d  🔴 >60d")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
-df_cli_fmt = formatar_clientes(df_tab)
-st.dataframe(
-    df_cli_fmt.style.apply(colorir_cliente, axis=1),
-    use_container_width=True, hide_index=True, height=500
-)
-st.caption(f"Exibindo {len(df_tab)} clientes")
+# ═══════════════════════════════════════════════════════════════
+# PÁGINA: FINANCEIRO
+# ═══════════════════════════════════════════════════════════════
+elif pagina == "💰  Financeiro":
+    st.markdown('<div class="page-header"><h2>Financeiro</h2><p>Resumo financeiro e pedidos recentes</p></div>', unsafe_allow_html=True)
 
-st.divider()
+    f1,f2,f3 = st.columns(3)
+    f1.markdown(kpi_card("💰","#e8f8ff","Faturamento Total", brl(fat_total), f"Mês: {brl(fat_mes)}"), unsafe_allow_html=True)
+    f2.markdown(kpi_card("🏦","#eef2ff","Omie.CASH", brl(saldo_cash), "Saldo disponível"), unsafe_allow_html=True)
+    f3.markdown(kpi_card("⚠️","#fff0f3","Em Atraso", brl(total_atraso), f"{len(df_bol)} boletos"), unsafe_allow_html=True)
 
+    st.write("")
 
-# ─────────────────────────────────────────────────────────────
-# PEDIDOS RECENTES
-# ─────────────────────────────────────────────────────────────
-st.subheader("📋 Pedidos recentes")
+    # Faturamento por mês (barras)
+    st.markdown('<div class="card"><p class="card-title">📊 Faturamento por mês</p>', unsafe_allow_html=True)
+    if not df_ped.empty:
+        df_mes = (
+            df_ped.dropna(subset=["data_pedido"])
+            .assign(mes=lambda x: x["data_pedido"].dt.to_period("M").astype(str))
+            .groupby("mes").agg(faturamento=("valor_total","sum"), pedidos=("numero_pedido","count")).reset_index()
+        )
+        fig = go.Figure()
+        fig.add_trace(go.Bar(x=df_mes["mes"], y=df_mes["faturamento"], name="Faturamento",
+                             marker_color="#00b4d8", yaxis="y1"))
+        fig.add_trace(go.Scatter(x=df_mes["mes"], y=df_mes["pedidos"], name="Pedidos",
+                                 mode="lines+markers", line=dict(color="#ffd166",width=2),
+                                 marker=dict(size=6), yaxis="y2"))
+        fig.update_layout(
+            margin=dict(t=10,b=0,l=0,r=0), height=280,
+            plot_bgcolor="white", paper_bgcolor="white",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            yaxis=dict(showgrid=True, gridcolor="#f0f4f8", title="R$"),
+            yaxis2=dict(overlaying="y", side="right", title="Pedidos", showgrid=False),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-df_ped_exib = (
-    df_pedidos
-    .merge(df_clientes[["codigo_cliente", "nome_cliente"]], on="codigo_cliente", how="left")
-    .sort_values("data_pedido", ascending=False)
-    .head(50)
-)[["numero_pedido", "data_pedido", "nome_cliente", "valor_total", "quantidade_itens", "etapa"]].copy()
-
-df_ped_exib.columns = ["Nº Pedido", "Data", "Cliente", "Valor (R$)", "Itens", "Etapa"]
-df_ped_exib["Data"]       = pd.to_datetime(df_ped_exib["Data"]).dt.strftime("%d/%m/%Y")
-df_ped_exib["Valor (R$)"] = df_ped_exib["Valor (R$)"].apply(brl)
-etapa_map = {"10":"Novo","20":"Em análise","30":"Aprovado","40":"Em produção",
-             "50":"Pronto","60":"Enviado","70":"Entregue"}
-df_ped_exib["Etapa"] = df_ped_exib["Etapa"].map(etapa_map).fillna(df_ped_exib["Etapa"])
-
-st.dataframe(df_ped_exib, use_container_width=True, hide_index=True, height=400)
-
-st.divider()
-st.caption("Dados em tempo real via API Omie · Cache 5 min · Clique em 🔄 para forçar atualização")
+    # Pedidos recentes
+    st.markdown('<div class="card"><p class="card-title">📋 Pedidos recentes</p>', unsafe_allow_html=True)
+    df_pr = (
+        df_ped.merge(df_cli[["codigo_cliente","nome_cliente"]], on="codigo_cliente", how="left")
+        .sort_values("data_pedido", ascending=False).head(50)
+    )[["numero_pedido","data_pedido","nome_cliente","valor_total","quantidade_itens","etapa"]].copy()
+    df_pr.columns=["Nº Pedido","Data","Cliente","Valor (R$)","Itens","Etapa"]
+    df_pr["Data"]=pd.to_datetime(df_pr["Data"]).dt.strftime("%d/%m/%Y")
+    df_pr["Valor (R$)"]=df_pr["Valor (R$)"].apply(brl)
+    etapa_map={"10":"Novo","20":"Em análise","30":"Aprovado","40":"Em produção","50":"Pronto","60":"Enviado","70":"Entregue"}
+    df_pr["Etapa"]=df_pr["Etapa"].map(etapa_map).fillna(df_pr["Etapa"])
+    st.dataframe(df_pr, use_container_width=True, hide_index=True, height=420)
+    st.markdown('</div>', unsafe_allow_html=True)
