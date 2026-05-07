@@ -1,0 +1,11 @@
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+*.log
+pedidos.csv
+clientes.csv
+indicadores_clientes.csv
+streamlit.log
+streamlit_err.log
+teste_cmc.py
+omie_powerbi.py
