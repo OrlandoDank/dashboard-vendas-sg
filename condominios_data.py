@@ -37,6 +37,7 @@ def carregar_dados_condominios() -> pd.DataFrame:
 
 
 def agregar_clientes(df: pd.DataFrame) -> pd.DataFrame:
+    hoje = pd.Timestamp.today().normalize()
     resumo = (
         df.groupby(["condominio", "cliente"])
         .agg(
@@ -44,9 +45,11 @@ def agregar_clientes(df: pd.DataFrame) -> pd.DataFrame:
             total_custo   =("custo",      "sum"),
             total_lucro   =("lucro",      "sum"),
             qtd_itens     =("quantidade", "sum"),
+            ultima_compra =("data",       "max"),
         )
         .reset_index()
     )
+    resumo["dias_sem_comprar"] = (hoje - resumo["ultima_compra"]).dt.days
     resumo["margem_pct"] = (
         resumo["total_lucro"] / resumo["total_comprado"] * 100
     ).round(1)

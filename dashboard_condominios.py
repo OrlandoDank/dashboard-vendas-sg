@@ -315,9 +315,14 @@ elif pagina == "🏢  Por Condomínio":
     # ── Quem compra mais (do maior para menor) ─────────────────
     st.markdown('<div class="card"><p class="card-title">🏆 Clientes — do maior para o menor comprador</p>', unsafe_allow_html=True)
     top_cl = df_cl.head(20).copy()
-    top_cl["nome"] = top_cl["cliente"].str[:35]
+
+    def _badge_dias(d):
+        cor = "#e8fff5;color:#06d6a0" if d < 30 else "#fff8e8;color:#ffc107" if d <= 60 else "#ffeef2;color:#ef476f"
+        return f'<span style="background:{cor.split(";")[0]};color:{cor.split(";")[1]};border-radius:5px;padding:2px 8px;font-size:12px;font-weight:600;">{d}d</span>'
+
+    top_cl["nome_dias"] = top_cl["cliente"].str[:35] + "  " + top_cl["dias_sem_comprar"].astype(str) + "d"
     fig = px.bar(
-        top_cl.sort_values("total_comprado"), x="total_comprado", y="nome",
+        top_cl.sort_values("total_comprado"), x="total_comprado", y="nome_dias",
         orientation="h", color_discrete_sequence=[cor_cond], text_auto=".2s",
     )
     fig.update_layout(
@@ -327,6 +332,7 @@ elif pagina == "🏢  Por Condomínio":
         yaxis=dict(title=""),
     )
     st.plotly_chart(fig, use_container_width=True)
+    st.caption("🟢 <30d sem comprar  🟡 30–60d  🔴 >60d")
     st.markdown("</div>", unsafe_allow_html=True)
 
     p1, p2 = st.columns(2)
@@ -393,7 +399,7 @@ elif pagina == "👥  Clientes":
     fc1, fc2, fc3 = st.columns([2, 2, 2])
     with fc1: busca     = st.text_input("🔍 Buscar cliente", placeholder="Nome...")
     with fc2: cond_f    = st.selectbox("Condomínio", ["Todos"] + condominios)
-    with fc3: ordem_cli = st.selectbox("Ordenar por", ["Total comprado", "Margem %", "Nome"])
+    with fc3: ordem_cli = st.selectbox("Ordenar por", ["Total comprado", "Dias s/ comprar", "Margem %", "Nome"])
 
     df_tab = df_cli[df_cli["condominio"] != "Outros"].copy()
     if busca:
@@ -402,37 +408,52 @@ elif pagina == "👥  Clientes":
         df_tab = df_tab[df_tab["condominio"] == cond_f]
 
     mapa_c = {
-        "Total comprado": ("total_comprado", False),
-        "Margem %":       ("margem_pct",     False),
-        "Nome":           ("cliente",        True),
+        "Total comprado":   ("total_comprado",   False),
+        "Dias s/ comprar":  ("dias_sem_comprar", True),
+        "Margem %":         ("margem_pct",       False),
+        "Nome":             ("cliente",          True),
     }
     col_c, asc_c = mapa_c[ordem_cli]
     df_tab = df_tab.sort_values(col_c, ascending=asc_c)
 
     def fmt_cli(df):
-        out = df[["cliente", "condominio", "total_comprado", "total_custo", "total_lucro", "qtd_itens", "margem_pct"]].copy()
-        out.columns = ["Cliente", "Condomínio", "Total (R$)", "Custo (R$)", "Lucro (R$)", "Itens", "Margem %"]
-        out["Total (R$)"]  = out["Total (R$)"].apply(brl)
-        out["Custo (R$)"]  = out["Custo (R$)"].apply(brl)
-        out["Lucro (R$)"]  = out["Lucro (R$)"].apply(brl)
-        out["Margem %"]    = out["Margem %"].apply(lambda v: f"{v:.1f}%" if pd.notna(v) else "—")
+        out = df[[
+            "cliente", "condominio", "total_comprado", "total_custo",
+            "total_lucro", "qtd_itens", "ultima_compra", "dias_sem_comprar", "margem_pct",
+        ]].copy()
+        out.columns = [
+            "Cliente", "Condomínio", "Total (R$)", "Custo (R$)",
+            "Lucro (R$)", "Itens", "Última Compra", "Dias s/ comprar", "Margem %",
+        ]
+        out["Total (R$)"]     = out["Total (R$)"].apply(brl)
+        out["Custo (R$)"]     = out["Custo (R$)"].apply(brl)
+        out["Lucro (R$)"]     = out["Lucro (R$)"].apply(brl)
+        out["Última Compra"]  = pd.to_datetime(out["Última Compra"]).dt.strftime("%d/%m/%Y").fillna("—")
+        out["Margem %"]       = out["Margem %"].apply(lambda v: f"{v:.1f}%" if pd.notna(v) else "—")
         return out
 
-    def cor_margem_row(row):
-        m = row["Margem %"]
+    def cor_cli_row(row):
+        d   = row["Dias s/ comprar"]
+        cor_d = "#e8fff5" if d < 30 else "#fff8e8" if d <= 60 else "#fff0f3"
+        m   = row["Margem %"]
         if m == "—":
-            cor = ""
+            cor_m = ""
         else:
             v = float(m.replace("%", ""))
-            cor = "#e8fff5" if v >= 30 else "#fff8e8" if v >= 10 else "#fff0f3"
-        return [f"background-color:{cor}" if col == "Margem %" else "" for col in row.index]
+            cor_m = "#e8fff5" if v >= 30 else "#fff8e8" if v >= 10 else "#fff0f3"
+        return [
+            f"background-color:{cor_d}" if col in ("Dias s/ comprar", "Última Compra")
+            else f"background-color:{cor_m}" if col == "Margem %"
+            else ""
+            for col in row.index
+        ]
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.dataframe(
-        fmt_cli(df_tab).style.apply(cor_margem_row, axis=1),
+        fmt_cli(df_tab).style.apply(cor_cli_row, axis=1),
         use_container_width=True, hide_index=True, height=520,
     )
-    st.caption(f"{len(df_tab)} clientes · {n_clientes} no total")
+    st.caption(f"{len(df_tab)} clientes · {n_clientes} no total  ·  🟢 <30d  🟡 30–60d  🔴 >60d")
     st.markdown("</div>", unsafe_allow_html=True)
 
 
