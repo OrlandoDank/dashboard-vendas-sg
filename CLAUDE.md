@@ -58,6 +58,7 @@ Two files do all the work:
 ## Important constraints
 
 - **CMC matching**: product descriptions from the API are matched against the spreadsheet by normalised uppercase description. Format in spreadsheet is `"CODE - DESCRIPTION (UNIT)"` — the regex `^\S+\s*-\s*(.+?)\s*\(\w+\)$` extracts the description part. If a product's margin shows `—`, its description doesn't match any row in `Custos.xlsx`.
+- **CMC must always be read alongside the Omie API**: every data refresh must call `carregar_cmc_planilha()` together with the API calls — never skip it or cache it independently. `carregar_dados()` already enforces this by calling both in the same function. Do not refactor this in a way that allows the API data to be returned without the CMC values from the spreadsheet.
 - **Omie API has no CMC/stock-cost endpoint** — the `produtos/estoque/` endpoint returns 404 on this account plan. All cost data must come from the spreadsheet.
 - **Color coding** used consistently throughout: green < 30 days, yellow 30–60 days, red > 60 days (applied to `dias_sem_comprar` for clients and `dias_atraso` for boletos; for margins: green ≥ 30%, yellow ≥ 10%, red < 10%).
 - **Updating `Custos.xlsx`**: export fresh report from Omie, save as `Custos.xlsx` in repo root, commit and push — dashboard picks it up on next data refresh.
