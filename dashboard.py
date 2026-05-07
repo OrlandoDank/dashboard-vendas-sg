@@ -3,7 +3,20 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+from pathlib import Path
+import base64
 from omie_api import carregar_dados
+
+# ─────────────────────────────────────────────────────────────
+# LOGO
+# ─────────────────────────────────────────────────────────────
+def _logo_b64() -> str:
+    p = Path(__file__).parent / "logo.jpg"
+    if p.exists():
+        return base64.b64encode(p.read_bytes()).decode()
+    return ""
+
+_LOGO = _logo_b64()
 
 # ─────────────────────────────────────────────────────────────
 # CONFIG
@@ -111,8 +124,21 @@ MES   = datetime.now().strftime("%b/%Y")
 # SIDEBAR
 # ─────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("<h2 style='color:white;font-size:18px;margin-bottom:4px;'>📊 SG Soluções</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#666;font-size:12px;margin-bottom:24px;'>Dashboard de Vendas</p>", unsafe_allow_html=True)
+    if _LOGO:
+        st.markdown(f"""
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+          <img src="data:image/jpeg;base64,{_LOGO}"
+               style="width:48px;height:48px;object-fit:contain;border-radius:10px;background:white;padding:3px;flex-shrink:0;">
+          <div>
+            <p style="color:white;font-size:17px;font-weight:700;margin:0;line-height:1.2;">SG Bichos</p>
+            <p style="color:#8892a4;font-size:11px;margin:0;">Dashboard de Vendas</p>
+          </div>
+        </div>
+        <div style="margin-bottom:20px;"></div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("<h2 style='color:white;font-size:18px;margin-bottom:4px;'>SG Bichos</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#666;font-size:12px;margin-bottom:24px;'>Dashboard de Vendas</p>", unsafe_allow_html=True)
 
     pagina = st.radio("Navegação", [
         "🏠  Visão Geral",
