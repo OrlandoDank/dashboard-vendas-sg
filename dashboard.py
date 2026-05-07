@@ -15,23 +15,44 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+  /* ── KPI cards ── */
   .kpi-card {
     background: #1e293b;
     border-radius: 10px;
     padding: 12px 16px;
     text-align: center;
     height: 100%;
+    margin-bottom: 8px;
   }
   .kpi-card .label  { color: #94a3b8; font-size: 12px; margin: 0; }
   .kpi-card .total  { color: #f1f5f9; font-size: 20px; font-weight: 700; margin: 4px 0 2px; }
   .kpi-card .mes    { color: #60a5fa; font-size: 13px; margin: 0; }
   .kpi-card .sub    { color: #64748b; font-size: 11px; margin: 0; }
-  .status-bar { display:flex; gap:8px; margin-bottom: 4px; }
+
+  /* ── Badges ── */
   .badge { border-radius:6px; padding: 4px 12px; font-size:13px; font-weight:600; }
   .verde    { background:#d4edda; color:#155724; }
   .amarelo  { background:#fff3cd; color:#856404; }
   .vermelho { background:#f8d7da; color:#721c24; }
   .cinza    { background:#e2e8f0; color:#475569; }
+
+  /* ── Mobile ── */
+  @media (max-width: 768px) {
+    .kpi-card .total  { font-size: 17px; }
+    .kpi-card .mes    { font-size: 12px; }
+    .kpi-card .label  { font-size: 11px; }
+    [data-testid="column"] {
+      width: 100% !important;
+      flex: 1 1 100% !important;
+      min-width: 100% !important;
+    }
+    .block-container {
+      padding-left: 1rem !important;
+      padding-right: 1rem !important;
+    }
+    h1 { font-size: 1.4rem !important; }
+    [data-testid="stDataFrame"] { overflow-x: auto !important; }
+  }
 </style>
 """, unsafe_allow_html=True)
 
