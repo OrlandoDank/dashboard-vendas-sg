@@ -4,25 +4,24 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-# Credenciais: lidas do Streamlit secrets (nuvem) ou variáveis de ambiente (local)
-try:
-    import streamlit as st
-    APP_KEY    = st.secrets.get("OMIE_APP_KEY",    os.environ.get("OMIE_APP_KEY",    ""))
-    APP_SECRET = st.secrets.get("OMIE_APP_SECRET", os.environ.get("OMIE_APP_SECRET", ""))
-except Exception:
-    APP_KEY    = os.environ.get("OMIE_APP_KEY",    "")
-    APP_SECRET = os.environ.get("OMIE_APP_SECRET", "")
-
-URL_BASE = "https://app.omie.com.br/api/v1/"
-
-# Planilha de CMC: sempre na mesma pasta do código
+URL_BASE     = "https://app.omie.com.br/api/v1/"
 PLANILHA_CMC = Path(__file__).parent / "Custos.xlsx"
 
 
+def _credenciais():
+    """Lê APP_KEY e APP_SECRET em tempo de execução (não na importação)."""
+    try:
+        import streamlit as st
+        return st.secrets["OMIE_APP_KEY"], st.secrets["OMIE_APP_SECRET"]
+    except Exception:
+        return os.environ.get("OMIE_APP_KEY", ""), os.environ.get("OMIE_APP_SECRET", "")
+
+
 def _post(endpoint: str, call: str, param: dict) -> dict:
+    app_key, app_secret = _credenciais()
     payload = {
-        "app_key":    APP_KEY,
-        "app_secret": APP_SECRET,
+        "app_key":    app_key,
+        "app_secret": app_secret,
         "call":       call,
         "param":      [param],
     }
