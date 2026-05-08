@@ -2,6 +2,23 @@ from pathlib import Path
 import pandas as pd
 
 PLANILHA_COND = Path(__file__).parent.parent / "Condominios" / "condominios.xlsx"
+PLANILHA_END  = Path(__file__).parent.parent / "CondominiosDash" / "Endereços.xlsx"
+
+
+def carregar_enderecos() -> pd.DataFrame:
+    """Lê Endereços.xlsx e retorna DataFrame com nome_norm → telefone."""
+    df_raw = pd.read_excel(PLANILHA_END, header=None)
+    header_row = next(i for i, row in df_raw.iterrows() if any("Telefone" in str(v) for v in row.values))
+    df_raw.columns = df_raw.iloc[header_row]
+    df = df_raw.iloc[header_row + 1:].copy().reset_index(drop=True)
+    col_nome = next(c for c in df.columns if "Social" in str(c) or "Nome Completo" in str(c))
+    col_tel  = next(c for c in df.columns if "Telefone" in str(c))
+    df = df[[col_nome, col_tel]].copy()
+    df.columns = ["nome", "telefone"]
+    df = df.dropna(subset=["nome"])
+    df["nome_norm"] = df["nome"].astype(str).str.strip().str.upper()
+    df["telefone"]  = df["telefone"].astype(str).str.strip().replace("nan", "")
+    return df[["nome_norm", "telefone"]].drop_duplicates("nome_norm")
 
 
 def carregar_dados_condominios() -> pd.DataFrame:
@@ -66,6 +83,14 @@ def agregar_clientes(df: pd.DataFrame) -> pd.DataFrame:
         resumo["total_lucro"] / resumo["total_comprado"] * 100
     ).round(1)
     resumo.loc[resumo["total_comprado"] <= 0, "margem_pct"] = None
+
+    # Merge telefone da planilha de endereços
+    df_end = carregar_enderecos()
+    resumo["nome_norm"] = resumo["cliente"].str.strip().str.upper()
+    resumo = resumo.merge(df_end, on="nome_norm", how="left")
+    resumo["telefone"] = resumo["telefone"].fillna("")
+    resumo = resumo.drop(columns=["nome_norm"])
+
     return resumo.sort_values("total_comprado", ascending=False).reset_index(drop=True)
 
 

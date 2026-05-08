@@ -418,11 +418,11 @@ elif pagina == "👥  Clientes":
 
     def fmt_cli(df):
         out = df[[
-            "cliente", "condominio", "total_comprado", "total_custo",
+            "cliente", "condominio", "telefone", "total_comprado", "total_custo",
             "total_lucro", "qtd_itens", "ultima_compra", "dias_sem_comprar", "margem_pct",
         ]].copy()
         out.columns = [
-            "Cliente", "Condomínio", "Total (R$)", "Custo (R$)",
+            "Cliente", "Condomínio", "Telefone", "Total (R$)", "Custo (R$)",
             "Lucro (R$)", "Itens", "Última Compra", "Dias s/ comprar", "Margem %",
         ]
         out["Total (R$)"]     = out["Total (R$)"].apply(brl)
