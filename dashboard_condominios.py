@@ -434,8 +434,12 @@ elif pagina == "👥  Clientes":
         return out
 
     def cor_cli_row(row):
-        d   = row["Dias s/ comprar"]
-        cor_d = "#e8fff5" if d < 30 else "#fff8e8" if d <= 60 else "#fff0f3"
+        d_raw = row["Dias s/ comprar"]
+        if d_raw == "—":
+            cor_d = "#f8f9fa"
+        else:
+            d = int(d_raw)
+            cor_d = "#e8fff5" if d < 30 else "#fff8e8" if d <= 60 else "#fff0f3"
         m   = row["Margem %"]
         if m == "—":
             cor_m = ""
