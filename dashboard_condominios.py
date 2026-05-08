@@ -335,6 +335,30 @@ elif pagina == "🏢  Por Condomínio":
     st.caption("🟢 <30d sem comprar  🟡 30–60d  🔴 >60d")
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # ── Tabela de contato: quem ligar primeiro ──────────────────
+    st.markdown('<div class="card"><p class="card-title">📞 Lista de contato — mais tempo sem comprar</p>', unsafe_allow_html=True)
+    df_contato = (
+        df_cl[df_cl["dias_sem_comprar"] < 9999]
+        .sort_values("dias_sem_comprar", ascending=False)
+        [["cliente", "telefone", "dias_sem_comprar", "ultima_compra", "total_comprado"]]
+        .copy()
+    )
+    df_contato.columns = ["Cliente", "Telefone", "Dias s/ comprar", "Última Compra", "Total (R$)"]
+    df_contato["Última Compra"] = pd.to_datetime(df_contato["Última Compra"]).dt.strftime("%d/%m/%Y")
+    df_contato["Total (R$)"]    = df_contato["Total (R$)"].apply(brl)
+    df_contato["Telefone"]      = df_contato["Telefone"].replace("", "—")
+
+    def cor_contato(row):
+        d = row["Dias s/ comprar"]
+        cor = "#e8fff5" if d < 30 else "#fff8e8" if d <= 60 else "#fff0f3"
+        return [f"background-color:{cor}" if col in ("Dias s/ comprar", "Última Compra") else "" for col in row.index]
+
+    st.dataframe(
+        df_contato.style.apply(cor_contato, axis=1),
+        use_container_width=True, hide_index=True, height=350,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
     p1, p2 = st.columns(2)
 
     with p1:
