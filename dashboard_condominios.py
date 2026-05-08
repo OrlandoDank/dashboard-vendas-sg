@@ -492,10 +492,11 @@ elif pagina == "👥  Clientes":
 elif pagina == "📦  Produtos":
     st.markdown('<div class="page-header"><h2>Produtos</h2><p>Vendas e margem por produto</p></div>', unsafe_allow_html=True)
 
-    fp1, fp2, fp3 = st.columns([2, 2, 3])
+    fp1, fp2, fp3, fp4 = st.columns([2, 2, 1, 3])
     with fp1: busca_p  = st.text_input("🔍 Buscar produto", placeholder="Nome...")
     with fp2: cond_fp  = st.selectbox("Condomínio", ["Todos"] + condominios, key="cond_prod")
-    with fp3: ordem_p  = st.radio("Ordenar por", ["Qtd vendida", "Receita", "Margem %"], horizontal=True)
+    with fp3: abc_fp   = st.selectbox("ABC", ["Todos", "A", "B", "C"])
+    with fp4: ordem_p  = st.radio("Ordenar por", ["Qtd vendida", "Receita", "Margem %"], horizontal=True)
 
     df_pe = df_prod[df_prod["condominio"] != "Outros"].copy()
     if cond_fp != "Todos":
@@ -515,11 +516,16 @@ elif pagina == "📦  Produtos":
                 preco_medio       =("preco_medio",        "mean"),
                 cmc_medio         =("cmc_medio",          "mean"),
                 num_clientes      =("num_clientes",       "sum"),
+                curva_abc         =("curva_abc",          "first"),
+                quantidade_abc    =("quantidade_abc",     "first"),
             )
             .reset_index()
         )
         df_pe["margem_pct"] = (df_pe["lucro_total"] / df_pe["receita_total"] * 100).round(1)
         df_pe.loc[df_pe["receita_total"] <= 0, "margem_pct"] = None
+
+    if abc_fp != "Todos":
+        df_pe = df_pe[df_pe["curva_abc"] == abc_fp]
 
     mapa_p = {"Qtd vendida": "quantidade_vendida", "Receita": "receita_total", "Margem %": "margem_pct"}
     df_pe = df_pe.sort_values(mapa_p[ordem_p], ascending=False)
@@ -556,14 +562,17 @@ elif pagina == "📦  Produtos":
     def fmt_prod(df):
         has_cond = "condominio" in df.columns
         base_cols = ["produto"] + (["condominio"] if has_cond else []) + [
-            "quantidade_vendida", "preco_medio", "receita_total",
-            "custo_total", "lucro_total", "num_clientes", "margem_pct",
+            "curva_abc", "quantidade_vendida", "quantidade_abc",
+            "preco_medio", "receita_total", "custo_total", "lucro_total",
+            "num_clientes", "margem_pct",
         ]
         out = df[base_cols].copy()
         rename = {
             "produto":            "Produto",
             "condominio":         "Condomínio",
-            "quantidade_vendida": "Qtd",
+            "curva_abc":          "ABC",
+            "quantidade_vendida": "Qtd Cond.",
+            "quantidade_abc":     "Qtd Global",
             "preco_medio":        "Preço Médio (R$)",
             "receita_total":      "Receita (R$)",
             "custo_total":        "Custo (R$)",
@@ -572,6 +581,7 @@ elif pagina == "📦  Produtos":
             "margem_pct":         "Margem %",
         }
         out = out.rename(columns=rename)
+        out["Qtd Global"]       = out["Qtd Global"].apply(lambda v: int(v) if v > 0 else "—")
         out["Preço Médio (R$)"] = out["Preço Médio (R$)"].apply(brl)
         out["Receita (R$)"]     = out["Receita (R$)"].apply(brl)
         out["Custo (R$)"]       = out["Custo (R$)"].apply(brl)
@@ -579,19 +589,30 @@ elif pagina == "📦  Produtos":
         out["Margem %"]         = out["Margem %"].apply(lambda v: f"{v:.1f}%" if pd.notna(v) else "—")
         return out
 
-    def cor_margem_prod(row):
+    ABC_CORES = {"A": "#e8fff5", "B": "#fff8e8", "C": "#f0f4f8", "—": ""}
+
+    def cor_prod_row(row):
+        cor_abc = ABC_CORES.get(row["ABC"], "")
         m = row["Margem %"]
-        if m == "—":
-            cor = ""
-        else:
-            v = float(m.replace("%", ""))
-            cor = "#e8fff5" if v >= 30 else "#fff8e8" if v >= 10 else "#fff0f3"
-        return [f"background-color:{cor}" if col == "Margem %" else "" for col in row.index]
+        cor_m = "" if m == "—" else (
+            "#e8fff5" if float(m.replace("%","")) >= 30
+            else "#fff8e8" if float(m.replace("%","")) >= 10
+            else "#fff0f3"
+        )
+        return [
+            f"background-color:{cor_abc}" if col == "ABC"
+            else f"background-color:{cor_m}" if col == "Margem %"
+            else ""
+            for col in row.index
+        ]
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.dataframe(
-        fmt_prod(df_pe).style.apply(cor_margem_prod, axis=1),
+        fmt_prod(df_pe).style.apply(cor_prod_row, axis=1),
         use_container_width=True, hide_index=True, height=480,
     )
-    st.caption(f"{len(df_pe)} produtos")
+    n_a = (df_pe["curva_abc"] == "A").sum()
+    n_b = (df_pe["curva_abc"] == "B").sum()
+    n_c = (df_pe["curva_abc"] == "C").sum()
+    st.caption(f"{len(df_pe)} produtos  ·  🟢 A: {n_a}  🟡 B: {n_b}  ⚪ C: {n_c}")
     st.markdown("</div>", unsafe_allow_html=True)
