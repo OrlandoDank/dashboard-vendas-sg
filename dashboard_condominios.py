@@ -429,6 +429,7 @@ elif pagina == "👥  Clientes":
         out["Custo (R$)"]     = out["Custo (R$)"].apply(brl)
         out["Lucro (R$)"]     = out["Lucro (R$)"].apply(brl)
         out["Última Compra"]  = pd.to_datetime(out["Última Compra"]).dt.strftime("%d/%m/%Y").fillna("—")
+        out["Dias s/ comprar"] = out["Dias s/ comprar"].apply(lambda d: "—" if d == 9999 else str(d))
         out["Margem %"]       = out["Margem %"].apply(lambda v: f"{v:.1f}%" if pd.notna(v) else "—")
         return out
 

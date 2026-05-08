@@ -49,7 +49,19 @@ def agregar_clientes(df: pd.DataFrame) -> pd.DataFrame:
         )
         .reset_index()
     )
-    resumo["dias_sem_comprar"] = (hoje - resumo["ultima_compra"]).dt.days
+    # Datas futuras (entregas pré-agendadas) não contam como "última compra"
+    ultimas_passadas = (
+        df[df["data"] <= hoje]
+        .groupby(["condominio", "cliente"])["data"]
+        .max()
+        .rename("ultima_compra_real")
+        .reset_index()
+    )
+    resumo = resumo.merge(ultimas_passadas, on=["condominio", "cliente"], how="left")
+    # Clientes sem nenhuma compra passada ficam com ultima_compra = NaT e dias = 9999
+    resumo["ultima_compra"] = resumo["ultima_compra_real"]
+    resumo = resumo.drop(columns=["ultima_compra_real"])
+    resumo["dias_sem_comprar"] = (hoje - resumo["ultima_compra"]).dt.days.fillna(9999).astype(int)
     resumo["margem_pct"] = (
         resumo["total_lucro"] / resumo["total_comprado"] * 100
     ).round(1)
