@@ -223,17 +223,20 @@ if pagina == "🏠  Visão Geral":
     st.write("")
 
     # Card: Contas a pagar da semana
-    st.markdown('<div class="card"><p class="card-title">💸 Contas a Pagar esta Semana</p>', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     cp1, cp2 = st.columns([1, 3])
     with cp1:
-        st.markdown(kpi_card("💸","#fff0f3","A pagar", brl(total_pagar_semana), f"{qtd_pagar_semana} contas"), unsafe_allow_html=True)
+        st.markdown(kpi_card("💸","#fff0f3","Esta semana", brl(total_pagar_semana), f"{qtd_pagar_semana} contas"), unsafe_allow_html=True)
     with cp2:
         if not df_pagar_semana.empty:
-            df_ps_show = df_pagar_semana[["nome_fornecedor","numero_documento","data_vencimento","valor","status"]].copy()
+            _cli_lkp = df_cli[["codigo_cliente","nome_cliente"]].rename(columns={"codigo_cliente":"codigo_fornecedor","nome_cliente":"_nome"})
+            df_ps_show = df_pagar_semana.merge(_cli_lkp, on="codigo_fornecedor", how="left")
+            df_ps_show["nome_fornecedor"] = df_ps_show["_nome"].fillna(df_ps_show["nome_fornecedor"])
+            df_ps_show = df_ps_show[["nome_fornecedor","numero_documento","data_vencimento","valor","status"]].copy()
             df_ps_show.columns = ["Fornecedor","Documento","Vencimento","Valor (R$)","Status"]
             df_ps_show["Vencimento"] = df_ps_show["Vencimento"].dt.strftime("%d/%m/%Y")
             df_ps_show["Valor (R$)"] = df_ps_show["Valor (R$)"].apply(brl)
-            st.dataframe(df_ps_show, use_container_width=True, hide_index=True, height=180)
+            st.dataframe(df_ps_show.head(3), use_container_width=True, hide_index=True, height=143)
         else:
             st.info("Nenhuma conta a pagar esta semana.")
     st.markdown('</div>', unsafe_allow_html=True)
@@ -547,6 +550,9 @@ elif pagina == "💰  Financeiro":
         st.write("")
 
         if not df_pf.empty:
+            _cli_lkp2 = df_cli[["codigo_cliente","nome_cliente"]].rename(columns={"codigo_cliente":"codigo_fornecedor","nome_cliente":"_nome"})
+            df_pf = df_pf.merge(_cli_lkp2, on="codigo_fornecedor", how="left")
+            df_pf["nome_fornecedor"] = df_pf["_nome"].fillna(df_pf["nome_fornecedor"])
             df_pt = df_pf[["nome_fornecedor","numero_documento","parcela","data_vencimento","valor","status"]].copy()
             df_pt.columns = ["Fornecedor","Documento","Parcela","Vencimento","Valor (R$)","Status"]
             df_pt["Vencimento"] = df_pt["Vencimento"].dt.strftime("%d/%m/%Y")
