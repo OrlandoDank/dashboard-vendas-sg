@@ -302,10 +302,48 @@ def buscar_boletos_atrasados() -> pd.DataFrame:
     return df
 
 
+# ── CONTAS A PAGAR ────────────────────────────────────────────────────────────
+
+def buscar_contas_pagar() -> pd.DataFrame:
+    raw = _paginar(
+        "financas/contapagar/", "ListarContasPagar",
+        {"apenas_importado_api": "N"},
+        "conta_pagar_cadastro",
+    )
+    registros = []
+    for r in raw:
+        status = r.get("status_titulo", "")
+        if status in ("CANCELADO", "PAGO"):
+            continue
+        dv = r.get("data_vencimento", "")
+        try:
+            dt_venc = pd.to_datetime(dv, format="%d/%m/%Y")
+        except Exception:
+            continue
+        nome = (
+            r.get("nome_fornecedor")
+            or r.get("razao_social")
+            or str(r.get("codigo_cliente_fornecedor", ""))
+        )
+        registros.append({
+            "codigo_fornecedor": r.get("codigo_cliente_fornecedor"),
+            "nome_fornecedor":   nome,
+            "numero_documento":  r.get("numero_documento", ""),
+            "parcela":           r.get("numero_parcela", ""),
+            "data_vencimento":   dt_venc,
+            "valor":             float(r.get("valor_documento", 0) or 0),
+            "status":            status,
+        })
+    df = pd.DataFrame(registros)
+    if not df.empty:
+        df = df.sort_values("data_vencimento").reset_index(drop=True)
+    return df
+
+
 # ── ENTRADA PRINCIPAL ─────────────────────────────────────────────────────────
 
 def carregar_dados():
-    """Retorna (df_pedidos, df_linhas, df_clientes, df_ind, df_prod, df_boletos, saldo_cash)."""
+    """Retorna (df_pedidos, df_linhas, df_clientes, df_ind, df_prod, df_boletos, saldo_cash, df_pagar)."""
     df_clientes           = buscar_clientes()
     df_pedidos, df_linhas = buscar_pedidos_e_linhas()
     df_cmc                = carregar_cmc_planilha()        # lê planilha sempre atualizada
@@ -313,4 +351,5 @@ def carregar_dados():
     df_produtos           = calcular_produtos(df_linhas, df_cmc)
     df_boletos            = buscar_boletos_atrasados()
     saldo_cash            = buscar_saldo_omie_cash()
-    return df_pedidos, df_linhas, df_clientes, df_indicadores, df_produtos, df_boletos, saldo_cash
+    df_pagar              = buscar_contas_pagar()
+    return df_pedidos, df_linhas, df_clientes, df_indicadores, df_produtos, df_boletos, saldo_cash, df_pagar

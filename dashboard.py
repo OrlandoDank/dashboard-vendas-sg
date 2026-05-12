@@ -165,12 +165,25 @@ def get_dados():
     return carregar_dados()
 
 with st.spinner("Buscando dados do Omie..."):
-    df_ped, df_lin, df_cli, df_ind, df_prod, df_bol, saldo_cash = get_dados()
+    df_ped, df_lin, df_cli, df_ind, df_prod, df_bol, saldo_cash, df_pagar = get_dados()
 
 
 # ─────────────────────────────────────────────────────────────
 # MÉTRICAS GLOBAIS
 # ─────────────────────────────────────────────────────────────
+_hoje_ts        = pd.Timestamp.today().normalize()
+_ini_semana     = _hoje_ts - pd.Timedelta(days=_hoje_ts.weekday())
+_fim_semana     = _ini_semana + pd.Timedelta(days=6)
+
+if not df_pagar.empty:
+    _mask_sem       = (df_pagar["data_vencimento"] >= _ini_semana) & (df_pagar["data_vencimento"] <= _fim_semana)
+    df_pagar_semana = df_pagar[_mask_sem].copy()
+else:
+    df_pagar_semana = pd.DataFrame()
+
+total_pagar_semana = df_pagar_semana["valor"].sum() if not df_pagar_semana.empty else 0.0
+qtd_pagar_semana   = len(df_pagar_semana)
+
 fat_total     = df_ped["valor_total"].sum()
 fat_mes       = mes_soma(df_ped, "data_pedido", "valor_total")
 ped_total     = len(df_ped)
@@ -209,6 +222,24 @@ if pagina == "🏠  Visão Geral":
 
     st.write("")
 
+    # Card: Contas a pagar da semana
+    st.markdown('<div class="card"><p class="card-title">💸 Contas a Pagar esta Semana</p>', unsafe_allow_html=True)
+    cp1, cp2 = st.columns([1, 3])
+    with cp1:
+        st.markdown(kpi_card("💸","#fff0f3","A pagar", brl(total_pagar_semana), f"{qtd_pagar_semana} contas"), unsafe_allow_html=True)
+    with cp2:
+        if not df_pagar_semana.empty:
+            df_ps_show = df_pagar_semana[["nome_fornecedor","numero_documento","data_vencimento","valor","status"]].copy()
+            df_ps_show.columns = ["Fornecedor","Documento","Vencimento","Valor (R$)","Status"]
+            df_ps_show["Vencimento"] = df_ps_show["Vencimento"].dt.strftime("%d/%m/%Y")
+            df_ps_show["Valor (R$)"] = df_ps_show["Valor (R$)"].apply(brl)
+            st.dataframe(df_ps_show, use_container_width=True, hide_index=True, height=180)
+        else:
+            st.info("Nenhuma conta a pagar esta semana.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write("")
+
     # Gráfico de faturamento mensal (área)
     g1, g2 = st.columns([3,2])
     with g1:
@@ -220,18 +251,19 @@ if pagina == "🏠  Visão Geral":
                 .groupby("mes")["valor_total"].sum().reset_index()
             )
             fig = go.Figure()
-            fig.add_trace(go.Scatter(
+            fig.add_trace(go.Bar(
                 x=df_mes["mes"], y=df_mes["valor_total"],
-                fill="tozeroy", mode="lines+markers",
-                line=dict(color="#00b4d8", width=2.5),
-                fillcolor="rgba(0,180,216,0.12)",
-                marker=dict(size=6, color="#00b4d8"),
+                marker_color="#00b4d8",
+                text=[f"R${v/1000:.0f}k" for v in df_mes["valor_total"]],
+                textposition="outside",
+                textfont=dict(size=10),
             ))
             fig.update_layout(
-                margin=dict(t=0,b=0,l=0,r=0), height=240,
+                margin=dict(t=30,b=0,l=0,r=0), height=240,
                 plot_bgcolor="white", paper_bgcolor="white",
+                bargap=0.35,
                 xaxis=dict(showgrid=False, tickfont=dict(size=11)),
-                yaxis=dict(showgrid=True, gridcolor="#f0f4f8", tickfont=dict(size=11)),
+                yaxis=dict(showgrid=True, gridcolor="#f0f4f8", tickfont=dict(size=11), tickprefix="R$"),
             )
             st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -260,12 +292,12 @@ if pagina == "🏠  Visão Geral":
     # Top 5 clientes + Top 5 produtos
     t1, t2 = st.columns(2)
     with t1:
-        st.markdown('<div class="card"><p class="card-title">🏆 Top 5 Clientes</p>', unsafe_allow_html=True)
-        top5 = df_ind[df_ind["total_comprado"]>0].head(5).copy()
-        top5["nome_curto"] = top5["nome_cliente"].str[:25]
-        fig3 = px.bar(top5.sort_values("total_comprado"), x="total_comprado", y="nome_curto",
+        st.markdown('<div class="card"><p class="card-title">🏆 Top 10 Clientes</p>', unsafe_allow_html=True)
+        top10 = df_ind[df_ind["total_comprado"]>0].head(10).copy()
+        top10["nome_curto"] = top10["nome_cliente"].str[:25]
+        fig3 = px.bar(top10.sort_values("total_comprado"), x="total_comprado", y="nome_curto",
                       orientation="h", color_discrete_sequence=["#00b4d8"], text_auto=".2s")
-        fig3.update_layout(margin=dict(t=0,b=0,l=0,r=0), height=220,
+        fig3.update_layout(margin=dict(t=0,b=0,l=0,r=0), height=380,
                            plot_bgcolor="white", paper_bgcolor="white",
                            xaxis=dict(showgrid=True, gridcolor="#f0f4f8", title=""),
                            yaxis=dict(title=""))
@@ -273,12 +305,12 @@ if pagina == "🏠  Visão Geral":
         st.markdown('</div>', unsafe_allow_html=True)
 
     with t2:
-        st.markdown('<div class="card"><p class="card-title">📦 Top 5 Produtos</p>', unsafe_allow_html=True)
-        top5p = df_prod.head(5).copy()
-        top5p["desc_curta"] = top5p["descricao"].str[:25]
-        fig4 = px.bar(top5p.sort_values("quantidade_vendida"), x="quantidade_vendida", y="desc_curta",
+        st.markdown('<div class="card"><p class="card-title">📦 Top 10 Produtos</p>', unsafe_allow_html=True)
+        top10p = df_prod.head(10).copy()
+        top10p["desc_curta"] = top10p["descricao"].str[:25]
+        fig4 = px.bar(top10p.sort_values("quantidade_vendida"), x="quantidade_vendida", y="desc_curta",
                       orientation="h", color_discrete_sequence=["#06d6a0"], text_auto=True)
-        fig4.update_layout(margin=dict(t=0,b=0,l=0,r=0), height=220,
+        fig4.update_layout(margin=dict(t=0,b=0,l=0,r=0), height=380,
                            plot_bgcolor="white", paper_bgcolor="white",
                            xaxis=dict(showgrid=True, gridcolor="#f0f4f8", title=""),
                            yaxis=dict(title=""))
@@ -466,20 +498,73 @@ elif pagina == "💰  Financeiro":
             .groupby("mes").agg(faturamento=("valor_total","sum"), pedidos=("numero_pedido","count")).reset_index()
         )
         fig = go.Figure()
-        fig.add_trace(go.Bar(x=df_mes["mes"], y=df_mes["faturamento"], name="Faturamento",
-                             marker_color="#00b4d8", yaxis="y1"))
-        fig.add_trace(go.Scatter(x=df_mes["mes"], y=df_mes["pedidos"], name="Pedidos",
-                                 mode="lines+markers", line=dict(color="#ffd166",width=2),
-                                 marker=dict(size=6), yaxis="y2"))
+        fig.add_trace(go.Bar(
+            x=df_mes["mes"], y=df_mes["faturamento"], name="Faturamento",
+            marker_color="#00b4d8", yaxis="y1",
+            text=[f"R${v/1000:.0f}k" for v in df_mes["faturamento"]],
+            textposition="outside", textfont=dict(size=10),
+        ))
+        fig.add_trace(go.Scatter(
+            x=df_mes["mes"], y=df_mes["pedidos"], name="Pedidos",
+            mode="lines+markers", line=dict(color="#ffd166",width=2),
+            marker=dict(size=6), yaxis="y2",
+        ))
         fig.update_layout(
-            margin=dict(t=10,b=0,l=0,r=0), height=280,
+            margin=dict(t=40,b=0,l=0,r=0), height=300,
             plot_bgcolor="white", paper_bgcolor="white",
+            bargap=0.35,
             legend=dict(orientation="h", yanchor="bottom", y=1.02),
-            yaxis=dict(showgrid=True, gridcolor="#f0f4f8", title="R$"),
+            yaxis=dict(showgrid=True, gridcolor="#f0f4f8", title="R$", tickprefix="R$"),
             yaxis2=dict(overlaying="y", side="right", title="Pedidos", showgrid=False),
         )
         st.plotly_chart(fig, use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
+    # Contas a pagar
+    st.markdown('<div class="card"><p class="card-title">💸 Contas a Pagar</p>', unsafe_allow_html=True)
+    periodo = st.radio("Período:", ["Esta semana", "Este mês", "Este ano"], horizontal=True, key="radio_pagar")
+
+    if not df_pagar.empty:
+        _h = pd.Timestamp.today().normalize()
+        if periodo == "Esta semana":
+            _ini = _h - pd.Timedelta(days=_h.weekday())
+            _fim = _ini + pd.Timedelta(days=6)
+        elif periodo == "Este mês":
+            _ini = _h.replace(day=1)
+            _fim = (_ini + pd.DateOffset(months=1)) - pd.Timedelta(days=1)
+        else:
+            _ini = _h.replace(month=1, day=1)
+            _fim = _h.replace(month=12, day=31)
+
+        df_pf = df_pagar[(df_pagar["data_vencimento"] >= _ini) & (df_pagar["data_vencimento"] <= _fim)].copy()
+
+        pc1, pc2, pc3 = st.columns(3)
+        _atrasadas = df_pf[df_pf["status"] == "ATRASADO"]
+        pc1.markdown(kpi_card("💸","#fff0f3","Total a Pagar", brl(df_pf["valor"].sum()), f"{len(df_pf)} contas"), unsafe_allow_html=True)
+        pc2.markdown(kpi_card("⚠️","#fff8e8","Em Atraso", brl(_atrasadas["valor"].sum()), f"{len(_atrasadas)} contas"), unsafe_allow_html=True)
+        pc3.markdown(kpi_card("✅","#e8fff5","Em Aberto", brl(df_pf[df_pf["status"]=="ABERTO"]["valor"].sum()), f"{len(df_pf[df_pf['status']=='ABERTO'])} contas"), unsafe_allow_html=True)
+
+        st.write("")
+
+        if not df_pf.empty:
+            df_pt = df_pf[["nome_fornecedor","numero_documento","parcela","data_vencimento","valor","status"]].copy()
+            df_pt.columns = ["Fornecedor","Documento","Parcela","Vencimento","Valor (R$)","Status"]
+            df_pt["Vencimento"] = df_pt["Vencimento"].dt.strftime("%d/%m/%Y")
+            df_pt["Valor (R$)"] = df_pt["Valor (R$)"].apply(brl)
+
+            def cor_pagar(row):
+                cor = "#fff0f3" if row["Status"] == "ATRASADO" else ""
+                return [f"background-color:{cor}" if col in ("Status","Vencimento") else "" for col in row.index]
+
+            st.dataframe(df_pt.style.apply(cor_pagar, axis=1), use_container_width=True, hide_index=True, height=400)
+            st.caption(f"{len(df_pf)} contas · Total: {brl(df_pf['valor'].sum())}")
+        else:
+            st.info("Nenhuma conta a pagar no período selecionado.")
+    else:
+        st.info("Nenhuma conta a pagar encontrada.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write("")
 
     # Pedidos recentes
     st.markdown('<div class="card"><p class="card-title">📋 Pedidos recentes</p>', unsafe_allow_html=True)
