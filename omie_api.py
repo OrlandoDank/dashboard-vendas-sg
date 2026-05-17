@@ -268,9 +268,10 @@ def calcular_indicadores(df_pedidos: pd.DataFrame, df_clientes: pd.DataFrame) ->
     return df.sort_values("total_comprado", ascending=False).reset_index(drop=True)
 
 
-# ── BOLETOS EM ATRASO ─────────────────────────────────────────────────────────
+# ── CONTAS A RECEBER (ABERTO + ATRASADO) ─────────────────────────────────────
 
-def buscar_boletos_atrasados() -> pd.DataFrame:
+def buscar_contas_receber() -> pd.DataFrame:
+    """Retorna contas a receber ABERTO e ATRASADO (ignora PAGO e CANCELADO)."""
     raw = _paginar(
         "financas/contareceber/", "ListarContasReceber",
         {"apenas_importado_api": "N"},
@@ -279,7 +280,8 @@ def buscar_boletos_atrasados() -> pd.DataFrame:
     hoje = pd.Timestamp.today().normalize()
     registros = []
     for r in raw:
-        if r.get("status_titulo") != "ATRASADO":
+        status = r.get("status_titulo", "")
+        if status in ("PAGO", "CANCELADO"):
             continue
         dv = r.get("data_vencimento", "")
         try:
@@ -291,8 +293,9 @@ def buscar_boletos_atrasados() -> pd.DataFrame:
             "numero_documento":  r.get("numero_documento", ""),
             "parcela":           r.get("numero_parcela", ""),
             "data_vencimento":   dt_venc,
-            "dias_atraso":       (hoje - dt_venc).days,
+            "dias_atraso":       (hoje - dt_venc).days if status == "ATRASADO" else 0,
             "valor":             float(r.get("valor_documento", 0) or 0),
+            "status":            status,
             "codigo_lancamento": r.get("codigo_lancamento_omie"),
         })
     df = pd.DataFrame(registros)
@@ -343,13 +346,18 @@ def buscar_contas_pagar() -> pd.DataFrame:
 # ── ENTRADA PRINCIPAL ─────────────────────────────────────────────────────────
 
 def carregar_dados():
-    """Retorna (df_pedidos, df_linhas, df_clientes, df_ind, df_prod, df_boletos, saldo_cash, df_pagar)."""
+    """Retorna (df_pedidos, df_linhas, df_clientes, df_ind, df_prod, df_boletos, saldo_cash, df_pagar, df_receber)."""
     df_clientes           = buscar_clientes()
     df_pedidos, df_linhas = buscar_pedidos_e_linhas()
     df_cmc                = carregar_cmc_planilha()        # lê planilha sempre atualizada
     df_indicadores        = calcular_indicadores(df_pedidos, df_clientes)
     df_produtos           = calcular_produtos(df_linhas, df_cmc)
-    df_boletos            = buscar_boletos_atrasados()
+    df_todas_receber      = buscar_contas_receber()
     saldo_cash            = buscar_saldo_omie_cash()
     df_pagar              = buscar_contas_pagar()
-    return df_pedidos, df_linhas, df_clientes, df_indicadores, df_produtos, df_boletos, saldo_cash, df_pagar
+
+    _empty = pd.DataFrame()
+    df_boletos = df_todas_receber[df_todas_receber["status"] == "ATRASADO"].copy() if not df_todas_receber.empty else _empty
+    df_receber = df_todas_receber[df_todas_receber["status"] == "ABERTO"].copy()   if not df_todas_receber.empty else _empty
+
+    return df_pedidos, df_linhas, df_clientes, df_indicadores, df_produtos, df_boletos, saldo_cash, df_pagar, df_receber

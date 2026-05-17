@@ -165,7 +165,7 @@ def get_dados():
     return carregar_dados()
 
 with st.spinner("Buscando dados do Omie..."):
-    df_ped, df_lin, df_cli, df_ind, df_prod, df_bol, saldo_cash, df_pagar = get_dados()
+    df_ped, df_lin, df_cli, df_ind, df_prod, df_bol, saldo_cash, df_pagar, df_receber = get_dados()
 
 
 # ─────────────────────────────────────────────────────────────
@@ -183,6 +183,15 @@ else:
 
 total_pagar_semana = df_pagar_semana["valor"].sum() if not df_pagar_semana.empty else 0.0
 qtd_pagar_semana   = len(df_pagar_semana)
+
+if not df_receber.empty:
+    _mask_rec_sem       = (df_receber["data_vencimento"] >= _ini_semana) & (df_receber["data_vencimento"] <= _fim_semana)
+    df_receber_semana   = df_receber[_mask_rec_sem].copy()
+else:
+    df_receber_semana   = pd.DataFrame()
+
+total_receber_semana = df_receber_semana["valor"].sum() if not df_receber_semana.empty else 0.0
+qtd_receber_semana   = len(df_receber_semana)
 
 fat_total     = df_ped["valor_total"].sum()
 fat_mes       = mes_soma(df_ped, "data_pedido", "valor_total")
@@ -239,6 +248,25 @@ if pagina == "🏠  Visão Geral":
             st.dataframe(df_ps_show.head(3), use_container_width=True, hide_index=True, height=143)
         else:
             st.info("Nenhuma conta a pagar esta semana.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Card: Recebimentos da semana
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    cr1, cr2 = st.columns([1, 3])
+    with cr1:
+        st.markdown(kpi_card("💚","#e8fff5","Esta semana", brl(total_receber_semana), f"{qtd_receber_semana} recebimentos"), unsafe_allow_html=True)
+    with cr2:
+        if not df_receber_semana.empty:
+            df_rs_show = df_receber_semana.merge(
+                df_cli[["codigo_cliente","nome_cliente"]], on="codigo_cliente", how="left"
+            )
+            df_rs_show = df_rs_show[["nome_cliente","numero_documento","data_vencimento","valor"]].copy()
+            df_rs_show.columns = ["Cliente","Documento","Vencimento","Valor (R$)"]
+            df_rs_show["Vencimento"] = df_rs_show["Vencimento"].dt.strftime("%d/%m/%Y")
+            df_rs_show["Valor (R$)"] = df_rs_show["Valor (R$)"].apply(brl)
+            st.dataframe(df_rs_show.head(3), use_container_width=True, hide_index=True, height=143)
+        else:
+            st.info("Nenhum recebimento previsto esta semana.")
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.write("")
