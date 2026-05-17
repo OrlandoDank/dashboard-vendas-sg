@@ -171,12 +171,12 @@ with st.spinner("Buscando dados do Omie..."):
 # ─────────────────────────────────────────────────────────────
 # MÉTRICAS GLOBAIS
 # ─────────────────────────────────────────────────────────────
-_hoje_ts        = pd.Timestamp.today().normalize()
-_ini_semana     = _hoje_ts - pd.Timedelta(days=_hoje_ts.weekday())
-_fim_semana     = _ini_semana + pd.Timedelta(days=6)
+_hoje_ts    = pd.Timestamp.today().normalize()
+_ini_7dias  = _hoje_ts
+_fim_7dias  = _hoje_ts + pd.Timedelta(days=7)
 
 if not df_pagar.empty:
-    _mask_sem       = (df_pagar["data_vencimento"] >= _ini_semana) & (df_pagar["data_vencimento"] <= _fim_semana)
+    _mask_sem       = (df_pagar["data_vencimento"] >= _ini_7dias) & (df_pagar["data_vencimento"] <= _fim_7dias)
     df_pagar_semana = df_pagar[_mask_sem].copy()
 else:
     df_pagar_semana = pd.DataFrame()
@@ -185,10 +185,10 @@ total_pagar_semana = df_pagar_semana["valor"].sum() if not df_pagar_semana.empty
 qtd_pagar_semana   = len(df_pagar_semana)
 
 if not df_receber.empty:
-    _mask_rec_sem       = (df_receber["data_vencimento"] >= _ini_semana) & (df_receber["data_vencimento"] <= _fim_semana)
-    df_receber_semana   = df_receber[_mask_rec_sem].copy()
+    _mask_rec_sem     = (df_receber["data_vencimento"] >= _ini_7dias) & (df_receber["data_vencimento"] <= _fim_7dias)
+    df_receber_semana = df_receber[_mask_rec_sem].copy()
 else:
-    df_receber_semana   = pd.DataFrame()
+    df_receber_semana = pd.DataFrame()
 
 total_receber_semana = df_receber_semana["valor"].sum() if not df_receber_semana.empty else 0.0
 qtd_receber_semana   = len(df_receber_semana)
@@ -235,7 +235,7 @@ if pagina == "🏠  Visão Geral":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     cp1, cp2 = st.columns([1, 3])
     with cp1:
-        st.markdown(kpi_card("💸","#fff0f3","Esta semana", brl(total_pagar_semana), f"{qtd_pagar_semana} contas"), unsafe_allow_html=True)
+        st.markdown(kpi_card("💸","#fff0f3","Próximos 7 dias", brl(total_pagar_semana), f"{qtd_pagar_semana} contas"), unsafe_allow_html=True)
     with cp2:
         if not df_pagar_semana.empty:
             _cli_lkp = df_cli[["codigo_cliente","nome_cliente"]].rename(columns={"codigo_cliente":"codigo_fornecedor","nome_cliente":"_nome"})
@@ -254,7 +254,7 @@ if pagina == "🏠  Visão Geral":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     cr1, cr2 = st.columns([1, 3])
     with cr1:
-        st.markdown(kpi_card("💚","#e8fff5","Esta semana", brl(total_receber_semana), f"{qtd_receber_semana} recebimentos"), unsafe_allow_html=True)
+        st.markdown(kpi_card("💚","#e8fff5","Próximos 7 dias", brl(total_receber_semana), f"{qtd_receber_semana} recebimentos"), unsafe_allow_html=True)
     with cr2:
         if not df_receber_semana.empty:
             df_rs_show = df_receber_semana.merge(
