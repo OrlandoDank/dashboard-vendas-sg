@@ -600,6 +600,46 @@ elif pagina == "💰  Financeiro":
 
     st.write("")
 
+    # Contas a receber
+    st.markdown('<div class="card"><p class="card-title">💚 Contas a Receber</p>', unsafe_allow_html=True)
+    periodo_rec = st.radio("Período:", ["Esta semana", "Este mês", "Este ano"], horizontal=True, key="radio_receber")
+
+    if not df_receber.empty:
+        _h = pd.Timestamp.today().normalize()
+        if periodo_rec == "Esta semana":
+            _ini_r = _h - pd.Timedelta(days=_h.weekday())
+            _fim_r = _ini_r + pd.Timedelta(days=6)
+        elif periodo_rec == "Este mês":
+            _ini_r = _h.replace(day=1)
+            _fim_r = (_ini_r + pd.DateOffset(months=1)) - pd.Timedelta(days=1)
+        else:
+            _ini_r = _h.replace(month=1, day=1)
+            _fim_r = _h.replace(month=12, day=31)
+
+        df_rf = df_receber[(df_receber["data_vencimento"] >= _ini_r) & (df_receber["data_vencimento"] <= _fim_r)].copy()
+
+        pr1, pr2 = st.columns(2)
+        pr1.markdown(kpi_card("💚","#e8fff5","Total a Receber", brl(df_rf["valor"].sum()), f"{len(df_rf)} títulos"), unsafe_allow_html=True)
+        pr2.markdown(kpi_card("📄","#e8f8ff","Títulos", str(len(df_rf["codigo_cliente"].unique() if not df_rf.empty else [])), "clientes"), unsafe_allow_html=True)
+
+        st.write("")
+
+        if not df_rf.empty:
+            df_rf_show = df_rf.merge(df_cli[["codigo_cliente","nome_cliente"]], on="codigo_cliente", how="left")
+            df_rt = df_rf_show[["nome_cliente","numero_documento","parcela","data_vencimento","valor","status"]].copy()
+            df_rt.columns = ["Cliente","Documento","Parcela","Vencimento","Valor (R$)","Status"]
+            df_rt["Vencimento"] = df_rt["Vencimento"].dt.strftime("%d/%m/%Y")
+            df_rt["Valor (R$)"] = df_rt["Valor (R$)"].apply(brl)
+            st.dataframe(df_rt, use_container_width=True, hide_index=True, height=400)
+            st.caption(f"{len(df_rf)} títulos · Total: {brl(df_rf['valor'].sum())}")
+        else:
+            st.info("Nenhum recebimento no período selecionado.")
+    else:
+        st.info("Nenhuma conta a receber encontrada.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write("")
+
     # Pedidos recentes
     st.markdown('<div class="card"><p class="card-title">📋 Pedidos recentes</p>', unsafe_allow_html=True)
     df_pr = (

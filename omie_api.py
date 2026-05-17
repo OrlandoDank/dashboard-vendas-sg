@@ -271,17 +271,17 @@ def calcular_indicadores(df_pedidos: pd.DataFrame, df_clientes: pd.DataFrame) ->
 # ── CONTAS A RECEBER (ABERTO + ATRASADO) ─────────────────────────────────────
 
 def buscar_contas_receber() -> pd.DataFrame:
-    """Retorna contas a receber ABERTO e ATRASADO (ignora PAGO e CANCELADO)."""
+    """Retorna contas a receber em aberto e atrasadas (ignora RECEBIDO, PAGO e CANCELADO)."""
     raw = _paginar(
         "financas/contareceber/", "ListarContasReceber",
-        {"apenas_importado_api": "N"},
+        {},
         "conta_receber_cadastro",
     )
     hoje = pd.Timestamp.today().normalize()
     registros = []
     for r in raw:
         status = r.get("status_titulo", "")
-        if status in ("PAGO", "CANCELADO"):
+        if status in ("RECEBIDO", "PAGO", "CANCELADO"):
             continue
         dv = r.get("data_vencimento", "")
         try:
@@ -310,13 +310,13 @@ def buscar_contas_receber() -> pd.DataFrame:
 def buscar_contas_pagar() -> pd.DataFrame:
     raw = _paginar(
         "financas/contapagar/", "ListarContasPagar",
-        {"apenas_importado_api": "N"},
+        {},
         "conta_pagar_cadastro",
     )
     registros = []
     for r in raw:
         status = r.get("status_titulo", "")
-        if status in ("CANCELADO", "PAGO"):
+        if status in ("CANCELADO", "PAGO", "LIQUIDADO"):
             continue
         dv = r.get("data_vencimento", "")
         try:
@@ -357,7 +357,7 @@ def carregar_dados():
     df_pagar              = buscar_contas_pagar()
 
     _empty = pd.DataFrame()
-    df_boletos = df_todas_receber[df_todas_receber["status"] == "ATRASADO"].copy() if not df_todas_receber.empty else _empty
-    df_receber = df_todas_receber[df_todas_receber["status"] == "ABERTO"].copy()   if not df_todas_receber.empty else _empty
+    df_boletos = df_todas_receber[df_todas_receber["status"] == "ATRASADO"].copy()    if not df_todas_receber.empty else _empty
+    df_receber = df_todas_receber[df_todas_receber["status"] != "ATRASADO"].copy()   if not df_todas_receber.empty else _empty
 
     return df_pedidos, df_linhas, df_clientes, df_indicadores, df_produtos, df_boletos, saldo_cash, df_pagar, df_receber
