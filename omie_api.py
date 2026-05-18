@@ -288,11 +288,16 @@ def buscar_contas_receber() -> pd.DataFrame:
             dt_venc = pd.to_datetime(dv, format="%d/%m/%Y")
         except Exception:
             continue
+        dp = r.get("data_previsao") or dv
+        try:
+            dt_prev = pd.to_datetime(dp, format="%d/%m/%Y")
+        except Exception:
+            dt_prev = dt_venc
         registros.append({
             "codigo_cliente":    r.get("codigo_cliente_fornecedor"),
             "numero_documento":  r.get("numero_documento", ""),
             "parcela":           r.get("numero_parcela", ""),
-            "data_vencimento":   dt_venc,
+            "data_vencimento":   dt_prev,   # usa data_previsao (campo PREVISÃO do Omie)
             "dias_atraso":       (hoje - dt_venc).days if status == "ATRASADO" else 0,
             "valor":             float(r.get("valor_documento", 0) or 0),
             "status":            status,
@@ -323,6 +328,11 @@ def buscar_contas_pagar() -> pd.DataFrame:
             dt_venc = pd.to_datetime(dv, format="%d/%m/%Y")
         except Exception:
             continue
+        dp = r.get("data_previsao") or dv
+        try:
+            dt_prev = pd.to_datetime(dp, format="%d/%m/%Y")
+        except Exception:
+            dt_prev = dt_venc
         nome = (
             r.get("nome_fornecedor")
             or r.get("razao_social")
@@ -333,7 +343,7 @@ def buscar_contas_pagar() -> pd.DataFrame:
             "nome_fornecedor":   nome,
             "numero_documento":  r.get("numero_documento", ""),
             "parcela":           r.get("numero_parcela", ""),
-            "data_vencimento":   dt_venc,
+            "data_vencimento":   dt_prev,   # usa data_previsao (campo PREVISÃO do Omie)
             "valor":             float(r.get("valor_documento", 0) or 0),
             "status":            status,
         })
