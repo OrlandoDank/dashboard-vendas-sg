@@ -188,9 +188,14 @@ else:
 total_pagar_semana = df_pagar_semana["valor"].sum() if not df_pagar_semana.empty else 0.0
 qtd_pagar_semana   = len(df_pagar_semana)
 
-if not df_receber.empty:
-    _mask_rec_sem     = (df_receber["data_vencimento"] >= _ini_semana) & (df_receber["data_vencimento"] <= _fim_semana)
-    df_receber_semana = df_receber[_mask_rec_sem].copy()
+# Combina A VENCER + ATRASADO para o card semanal (igual à tela de Previsão do Omie)
+_cols_rec = ["codigo_cliente","numero_documento","parcela","data_vencimento","valor","status"]
+_partes = [df for df in [df_receber, df_bol] if not df.empty and all(c in df.columns for c in _cols_rec)]
+_df_todas_rec = pd.concat([d[_cols_rec] for d in _partes]).reset_index(drop=True) if _partes else pd.DataFrame()
+
+if not _df_todas_rec.empty:
+    _mask_rec_sem     = (_df_todas_rec["data_vencimento"] >= _ini_semana) & (_df_todas_rec["data_vencimento"] <= _fim_semana)
+    df_receber_semana = _df_todas_rec[_mask_rec_sem].copy()
 else:
     df_receber_semana = pd.DataFrame()
 
