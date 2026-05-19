@@ -188,7 +188,7 @@ else:
 total_pagar_semana = df_pagar_semana["valor"].sum() if not df_pagar_semana.empty else 0.0
 qtd_pagar_semana   = len(df_pagar_semana)
 
-# Combina A VENCER + ATRASADO para o card semanal (igual à tela de Previsão do Omie)
+# Boletos/títulos formais (A VENCER + ATRASADO) com previsão nesta semana
 _cols_rec = ["codigo_cliente","numero_documento","parcela","data_vencimento","valor","status"]
 _partes = [df for df in [df_receber, df_bol] if not df.empty and all(c in df.columns for c in _cols_rec)]
 _df_todas_rec = pd.concat([d[_cols_rec] for d in _partes]).reset_index(drop=True) if _partes else pd.DataFrame()
@@ -198,6 +198,27 @@ if not _df_todas_rec.empty:
     df_receber_semana = _df_todas_rec[_mask_rec_sem].copy()
 else:
     df_receber_semana = pd.DataFrame()
+
+# Pedidos com data de previsão nesta semana (previsões de vendas — igual ao relatório Omie)
+if not df_ped.empty:
+    _ped_sem = df_ped[
+        (df_ped["data_pedido"] >= _ini_semana) &
+        (df_ped["data_pedido"] <= _fim_semana)
+    ].merge(df_cli[["codigo_cliente","nome_cliente"]], on="codigo_cliente", how="left").copy()
+    _ped_rec = pd.DataFrame({
+        "codigo_cliente":  _ped_sem["codigo_cliente"],
+        "numero_documento": _ped_sem["numero_pedido"].astype(str),
+        "parcela":         "",
+        "data_vencimento": _ped_sem["data_pedido"],
+        "valor":           _ped_sem["valor_total"],
+        "status":          "PEDIDO",
+    }) if not _ped_sem.empty else pd.DataFrame()
+else:
+    _ped_rec = pd.DataFrame()
+
+# Combina boletos + pedidos para o total da semana
+_rec_partes = [df for df in [df_receber_semana, _ped_rec] if not df.empty]
+df_receber_semana = pd.concat(_rec_partes).reset_index(drop=True) if _rec_partes else pd.DataFrame()
 
 total_receber_semana = df_receber_semana["valor"].sum() if not df_receber_semana.empty else 0.0
 qtd_receber_semana   = len(df_receber_semana)
@@ -268,9 +289,9 @@ if pagina == "🏠  Visão Geral":
         if not df_receber_semana.empty:
             df_rs_show = df_receber_semana.merge(
                 df_cli[["codigo_cliente","nome_cliente"]], on="codigo_cliente", how="left"
-            )
-            df_rs_show = df_rs_show[["nome_cliente","numero_documento","data_vencimento","valor"]].copy()
-            df_rs_show.columns = ["Cliente","Documento","Vencimento","Valor (R$)"]
+            ).sort_values("data_vencimento")
+            df_rs_show = df_rs_show[["nome_cliente","numero_documento","data_vencimento","valor","status"]].copy()
+            df_rs_show.columns = ["Cliente","Documento","Vencimento","Valor (R$)","Tipo"]
             df_rs_show["Vencimento"] = df_rs_show["Vencimento"].dt.strftime("%d/%m/%Y")
             df_rs_show["Valor (R$)"] = df_rs_show["Valor (R$)"].apply(brl)
             st.dataframe(df_rs_show.head(3), use_container_width=True, hide_index=True, height=143)
