@@ -36,8 +36,13 @@ st.markdown("""
   section[data-testid="stSidebar"],
   [data-testid="stSidebarCollapsedControl"] { display: none !important; }
   footer, #MainMenu { visibility: hidden; }
-  .block-container { padding: 0 !important; max-width: 100% !important; }
+  .block-container { padding: 0 72px !important; max-width: 100% !important; }
   div[data-testid="stVerticalBlock"] > div { gap: 0 !important; }
+
+  /* header e benefits sangram até a borda mesmo com padding lateral */
+  .top-bar    { margin-left: -72px; margin-right: -72px; }
+  .site-header{ margin-left: -72px; margin-right: -72px; }
+  .benefits   { margin-left: -72px; margin-right: -72px; }
 
   /* ── barra topo navy ── */
   .top-bar {
@@ -91,7 +96,7 @@ st.markdown("""
   .produtos-area {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 32px 32px 64px;
+    padding: 32px 80px 64px;
   }
   .produtos-header {
     display: flex; align-items: baseline; justify-content: space-between;
@@ -125,7 +130,7 @@ st.markdown("""
   }
   .prod-img-wrap {
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 1 / 0.85;
     overflow: hidden;
     background: #f5f0ea;
     position: relative;
