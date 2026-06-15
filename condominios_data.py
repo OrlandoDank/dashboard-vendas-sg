@@ -1,9 +1,10 @@
 from pathlib import Path
 import pandas as pd
 
-PLANILHA_COND = Path(__file__).parent.parent / "Condominios" / "condominios.xlsx"
-PLANILHA_END  = Path(__file__).parent.parent / "CondominiosDash" / "Endereços.xlsx"
-PLANILHA_ABC  = Path(__file__).parent.parent / "CondominiosDash" / "curva ABC quantidade.xlsx"
+PLANILHA_COND      = Path(__file__).parent.parent / "Condominios" / "condominios.xlsx"
+PLANILHA_END       = Path(__file__).parent.parent / "CondominiosDash" / "Endereços.xlsx"
+PLANILHA_ABC       = Path(__file__).parent.parent / "CondominiosDash" / "Curva ABC quantidade.xlsx"
+PLANILHA_ABC_VALOR = Path(__file__).parent.parent / "CondominiosDash" / "Curva ABC valor.xlsx"
 
 
 def carregar_curva_abc() -> pd.DataFrame:
@@ -23,6 +24,26 @@ def carregar_curva_abc() -> pd.DataFrame:
         .str.strip().str.upper()
     )
     return df[["descricao_norm", "curva_abc", "quantidade_abc"]].drop_duplicates("descricao_norm")
+
+
+def carregar_curva_abc_valor() -> pd.DataFrame:
+    """Lê Curva ABC valor.xlsx e retorna descricao_norm → curva_abc_valor, valor_abc."""
+    df_raw = pd.read_excel(PLANILHA_ABC_VALOR, header=None)
+    header_row = next(i for i, row in df_raw.iterrows() if any("Ordem" in str(v) for v in row.values))
+    df_raw.columns = df_raw.iloc[header_row]
+    df = df_raw.iloc[header_row + 1:].copy().reset_index(drop=True)
+    df = df[df["Ordem"].notna() & df["Descrição (completa)"].notna()].copy()
+    df["curva_abc_valor"] = df["ABC"].ffill().str.extract(r"^([ABC])", expand=False)
+    col_valor = next(c for c in df.columns if "Valor" in str(c) or "Faturamento" in str(c) or "Receita" in str(c))
+    df["valor_abc"] = pd.to_numeric(df[col_valor], errors="coerce").fillna(0)
+    df["descricao_norm"] = (
+        df["Descrição (completa)"]
+        .astype(str)
+        .str.extract(r"^\S+\s*-\s*(.+)$", expand=False)
+        .fillna(df["Descrição (completa)"].astype(str))
+        .str.strip().str.upper()
+    )
+    return df[["descricao_norm", "curva_abc_valor", "valor_abc"]].drop_duplicates("descricao_norm")
 
 
 def carregar_enderecos() -> pd.DataFrame:
@@ -131,11 +152,18 @@ def agregar_produtos(df: pd.DataFrame) -> pd.DataFrame:
     resumo["margem_pct"] = (resumo["lucro_total"] / resumo["receita_total"] * 100).round(1)
     resumo.loc[resumo["receita_total"] <= 0, "margem_pct"] = None
 
-    df_abc = carregar_curva_abc()
     resumo["descricao_norm"] = resumo["produto"].str.strip().str.upper()
+
+    df_abc = carregar_curva_abc()
     resumo = resumo.merge(df_abc, on="descricao_norm", how="left")
-    resumo["curva_abc"]     = resumo["curva_abc"].fillna("—")
+    resumo["curva_abc"]      = resumo["curva_abc"].fillna("—")
     resumo["quantidade_abc"] = resumo["quantidade_abc"].fillna(0)
+
+    df_abc_val = carregar_curva_abc_valor()
+    resumo = resumo.merge(df_abc_val, on="descricao_norm", how="left")
+    resumo["curva_abc_valor"] = resumo["curva_abc_valor"].fillna("—")
+    resumo["valor_abc"]       = resumo["valor_abc"].fillna(0)
+
     resumo = resumo.drop(columns=["descricao_norm"])
 
     return resumo.sort_values("quantidade_vendida", ascending=False).reset_index(drop=True)

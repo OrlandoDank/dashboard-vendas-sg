@@ -492,11 +492,12 @@ elif pagina == "👥  Clientes":
 elif pagina == "📦  Produtos":
     st.markdown('<div class="page-header"><h2>Produtos</h2><p>Vendas e margem por produto</p></div>', unsafe_allow_html=True)
 
-    fp1, fp2, fp3, fp4 = st.columns([2, 2, 1, 3])
-    with fp1: busca_p  = st.text_input("🔍 Buscar produto", placeholder="Nome...")
-    with fp2: cond_fp  = st.selectbox("Condomínio", ["Todos"] + condominios, key="cond_prod")
-    with fp3: abc_fp   = st.selectbox("ABC", ["Todos", "A", "B", "C"])
-    with fp4: ordem_p  = st.radio("Ordenar por", ["Qtd vendida", "Receita", "Margem %"], horizontal=True)
+    fp1, fp2, fp3, fp4, fp5 = st.columns([2, 2, 1, 1, 3])
+    with fp1: busca_p    = st.text_input("🔍 Buscar produto", placeholder="Nome...")
+    with fp2: cond_fp    = st.selectbox("Condomínio", ["Todos"] + condominios, key="cond_prod")
+    with fp3: abc_fp     = st.selectbox("ABC Qtd", ["Todos", "A", "B", "C"])
+    with fp4: abc_val_fp = st.selectbox("ABC Val", ["Todos", "A", "B", "C"])
+    with fp5: ordem_p    = st.radio("Ordenar por", ["Qtd vendida", "Receita", "Margem %"], horizontal=True)
 
     df_pe = df_prod[df_prod["condominio"] != "Outros"].copy()
     if cond_fp != "Todos":
@@ -518,6 +519,8 @@ elif pagina == "📦  Produtos":
                 num_clientes      =("num_clientes",       "sum"),
                 curva_abc         =("curva_abc",          "first"),
                 quantidade_abc    =("quantidade_abc",     "first"),
+                curva_abc_valor   =("curva_abc_valor",    "first"),
+                valor_abc         =("valor_abc",          "first"),
             )
             .reset_index()
         )
@@ -526,6 +529,8 @@ elif pagina == "📦  Produtos":
 
     if abc_fp != "Todos":
         df_pe = df_pe[df_pe["curva_abc"] == abc_fp]
+    if abc_val_fp != "Todos":
+        df_pe = df_pe[df_pe["curva_abc_valor"] == abc_val_fp]
 
     mapa_p = {"Qtd vendida": "quantidade_vendida", "Receita": "receita_total", "Margem %": "margem_pct"}
     df_pe = df_pe.sort_values(mapa_p[ordem_p], ascending=False)
@@ -563,6 +568,7 @@ elif pagina == "📦  Produtos":
         has_cond = "condominio" in df.columns
         base_cols = ["produto"] + (["condominio"] if has_cond else []) + [
             "curva_abc", "quantidade_vendida", "quantidade_abc",
+            "curva_abc_valor", "valor_abc",
             "preco_medio", "receita_total", "custo_total", "lucro_total",
             "num_clientes", "margem_pct",
         ]
@@ -570,9 +576,11 @@ elif pagina == "📦  Produtos":
         rename = {
             "produto":            "Produto",
             "condominio":         "Condomínio",
-            "curva_abc":          "ABC",
+            "curva_abc":          "ABC Qtd",
             "quantidade_vendida": "Qtd Cond.",
             "quantidade_abc":     "Qtd Global",
+            "curva_abc_valor":    "ABC Val",
+            "valor_abc":          "Val Global (R$)",
             "preco_medio":        "Preço Médio (R$)",
             "receita_total":      "Receita (R$)",
             "custo_total":        "Custo (R$)",
@@ -582,6 +590,7 @@ elif pagina == "📦  Produtos":
         }
         out = out.rename(columns=rename)
         out["Qtd Global"]       = out["Qtd Global"].apply(lambda v: int(v) if v > 0 else "—")
+        out["Val Global (R$)"]  = out["Val Global (R$)"].apply(lambda v: brl(v) if v > 0 else "—")
         out["Preço Médio (R$)"] = out["Preço Médio (R$)"].apply(brl)
         out["Receita (R$)"]     = out["Receita (R$)"].apply(brl)
         out["Custo (R$)"]       = out["Custo (R$)"].apply(brl)
@@ -592,7 +601,8 @@ elif pagina == "📦  Produtos":
     ABC_CORES = {"A": "#e8fff5", "B": "#fff8e8", "C": "#f0f4f8", "—": ""}
 
     def cor_prod_row(row):
-        cor_abc = ABC_CORES.get(row["ABC"], "")
+        cor_abc     = ABC_CORES.get(row["ABC Qtd"], "")
+        cor_abc_val = ABC_CORES.get(row["ABC Val"], "")
         m = row["Margem %"]
         cor_m = "" if m == "—" else (
             "#e8fff5" if float(m.replace("%","")) >= 30
@@ -600,8 +610,9 @@ elif pagina == "📦  Produtos":
             else "#fff0f3"
         )
         return [
-            f"background-color:{cor_abc}" if col == "ABC"
-            else f"background-color:{cor_m}" if col == "Margem %"
+            f"background-color:{cor_abc}"     if col == "ABC Qtd"
+            else f"background-color:{cor_abc_val}" if col == "ABC Val"
+            else f"background-color:{cor_m}"  if col == "Margem %"
             else ""
             for col in row.index
         ]
@@ -614,5 +625,12 @@ elif pagina == "📦  Produtos":
     n_a = (df_pe["curva_abc"] == "A").sum()
     n_b = (df_pe["curva_abc"] == "B").sum()
     n_c = (df_pe["curva_abc"] == "C").sum()
-    st.caption(f"{len(df_pe)} produtos  ·  🟢 A: {n_a}  🟡 B: {n_b}  ⚪ C: {n_c}")
+    na_a = (df_pe["curva_abc_valor"] == "A").sum()
+    na_b = (df_pe["curva_abc_valor"] == "B").sum()
+    na_c = (df_pe["curva_abc_valor"] == "C").sum()
+    st.caption(
+        f"{len(df_pe)} produtos  ·  "
+        f"Qtd — 🟢 A: {n_a}  🟡 B: {n_b}  ⚪ C: {n_c}  ·  "
+        f"Val — 🟢 A: {na_a}  🟡 B: {na_b}  ⚪ C: {na_c}"
+    )
     st.markdown("</div>", unsafe_allow_html=True)
