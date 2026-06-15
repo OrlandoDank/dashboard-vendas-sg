@@ -121,6 +121,47 @@ MES   = datetime.now().strftime("%b/%Y")
 
 
 # ─────────────────────────────────────────────────────────────
+# AUTENTICAÇÃO
+# ─────────────────────────────────────────────────────────────
+def _check_auth() -> bool:
+    if st.session_state.get("autenticado"):
+        return True
+
+    senha_correta = st.secrets.get("DASHBOARD_PASSWORD", "sgbichos")
+
+    _, col, _ = st.columns([1, 1.2, 1])
+    with col:
+        if _LOGO:
+            st.markdown(f"""
+            <div style="text-align:center;padding:52px 0 28px;">
+              <img src="data:image/jpeg;base64,{_LOGO}"
+                   style="width:80px;height:80px;object-fit:contain;border-radius:16px;
+                          box-shadow:0 4px 20px rgba(0,0,0,0.12);background:white;padding:6px;">
+              <h2 style="color:#1a1f36;margin:18px 0 4px;font-size:22px;font-weight:800;">SG Bichos</h2>
+              <p style="color:#8892a4;margin:0;font-size:13px;">Dashboard de Vendas</p>
+            </div>
+            """, unsafe_allow_html=True)
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.markdown('<p class="card-title">🔒 Acesso Restrito</p>', unsafe_allow_html=True)
+        senha = st.text_input(
+            "Senha", type="password",
+            placeholder="Digite a senha de acesso",
+            label_visibility="collapsed",
+        )
+        if st.button("Entrar →", use_container_width=True, type="primary"):
+            if senha == senha_correta:
+                st.session_state.autenticado = True
+                st.rerun()
+            else:
+                st.error("Senha incorreta. Tente novamente.")
+        st.markdown('</div>', unsafe_allow_html=True)
+    return False
+
+if not _check_auth():
+    st.stop()
+
+
+# ─────────────────────────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────────────────────────
 with st.sidebar:

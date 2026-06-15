@@ -191,6 +191,8 @@ def buscar_catalogo_produtos() -> pd.DataFrame:
             "codigo_interno": p.get("codigo", ""),
             "descricao":      p.get("descricao", ""),
             "valor_venda":    float(p.get("valor_unitario", 0) or 0),
+            "familia":        p.get("descricao_familia", ""),
+            "inativo":        p.get("inativo", "N"),
         })
     df = pd.DataFrame(registros)
     df["codigo_produto"] = pd.to_numeric(df["codigo_produto"], errors="coerce")
