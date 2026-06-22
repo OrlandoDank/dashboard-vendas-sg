@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produto — SG Bichos</title>
+  <meta name="description" content="Detalhes do produto SG Bichos.">
+  <link rel="icon" type="image/png" href="images/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  🐾 Frete grátis acima de R$150! &nbsp;|&nbsp; Atendimento via <a href="https://wa.me/5541987109563">WhatsApp</a>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="logo">
+      <img src="images/logo-sg-bichos.jpg" alt="SG Bichos"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <div class="logo-text" style="display:none">SG <span>Bichos</span></div>
+    </a>
+    <div class="search-bar">
+      <input type="search" id="search-input" placeholder="Buscar produtos..." autocomplete="off">
+      <button class="search-btn" aria-label="Buscar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+      <div class="search-results" id="search-results"></div>
+    </div>
+    <div class="header-actions">
+      <a href="https://wa.me/5541987109563" target="_blank" class="header-btn" aria-label="WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="color:#25D366">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.975-1.306A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2"/>
+        </svg>
+        <span>WhatsApp</span>
+      </a>
+      <button class="header-btn cart-btn" id="cart-btn" aria-label="Carrinho">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span class="cart-badge" style="display:none">0</span>
+        <span>Carrinho</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-item"><a href="index.html" class="nav-link">Início</a></div>
+    <div id="nav-cats" style="display:contents"></div>
+    <div class="nav-item"><a href="contato.html" class="nav-link">📞 Contato</a></div>
+    <div class="nav-item" style="margin-left:auto">
+      <a href="categoria.html?promo=true" class="nav-link" style="color:#F5A800">🔥 Promoções</a>
+    </div>
+  </div>
+</nav>
+
+<!-- BREADCRUMB -->
+<div class="page-hero" style="padding:20px 24px">
+  <div class="page-hero-inner">
+    <div class="breadcrumb">
+      <a href="index.html">Início</a>
+      <span>›</span>
+      <a href="categoria.html" id="bc-cat">Produtos</a>
+      <span>›</span>
+      <span id="bc-nome">Produto</span>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUTO DETAIL -->
+<div class="product-detail" id="product-detail">
+  <!-- Renderizado por JS -->
+</div>
+
+<!-- RELACIONADOS -->
+<section class="section section-alt">
+  <div class="section-inner">
+    <div class="section-header">
+      <div class="section-label">Você também pode gostar</div>
+      <h2 class="section-title">Produtos Relacionados</h2>
+    </div>
+    <div class="products-grid" id="related-grid"></div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-main">
+    <div class="footer-brand">
+      <div class="logo-text">SG <span style="color:var(--laranja)">Bichos</span></div>
+      <p>Pet shop especializado em produtos premium para seu pet.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Categorias</h4>
+      <ul>
+        <li><a href="categoria.html?cat=caes">Cães</a></li>
+        <li><a href="categoria.html?cat=gatos">Gatos</a></li>
+        <li><a href="categoria.html?cat=passaros">Pássaros</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Contato</h4>
+      <ul>
+        <li><a href="https://wa.me/5541987109563" target="_blank">WhatsApp</a></li>
+        <li><a href="contato.html">Fale Conosco</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Horários</h4>
+      <ul>
+        <li style="color:rgba(255,255,255,0.6);font-size:0.85rem">Seg–Sex: 8h–18h</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2025 SG Bichos — Todos os direitos reservados</div>
+</footer>
+
+<!-- SIDE CART -->
+<div class="cart-overlay" id="cart-overlay"></div>
+<aside class="cart-panel" id="cart-panel">
+  <div class="cart-header">
+    <h3>🛒 Meu Carrinho</h3>
+    <button class="cart-close" id="cart-close" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="cart-items" id="cart-items"></div>
+  <div class="cart-footer">
+    <div class="cart-total-row">
+      <span class="cart-total-label">Total</span>
+      <span class="cart-total-value" id="cart-total">R$ 0,00</span>
+    </div>
+    <button class="btn-checkout" id="btn-checkout">💬 Pedir via WhatsApp</button>
+    <button class="btn-clear" id="btn-clear-cart">🗑 Limpar carrinho</button>
+  </div>
+</aside>
+
+<!-- WHATSAPP FLOAT -->
+<a href="https://wa.me/5541987109563" target="_blank" class="wpp-float" aria-label="WhatsApp">
+  <span class="wpp-tooltip">Falar no WhatsApp</span>
+  <svg viewBox="0 0 24 24" fill="white" width="30" height="30">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.975-1.306A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2"/>
+  </svg>
+</a>
+
+<script src="js/produtos.js"></script>
+<script src="js/main.js"></script>
+<script>
+  (function() {
+    const id = parseInt(new URLSearchParams(location.search).get('id'));
+    const prod = produtos.find(p => p.id === id);
+    const placeholder = 'https://placehold.co/600x600/2C1A08/F5A800?text=SG+Bichos';
+
+    if (!prod) {
+      document.getElementById('product-detail').innerHTML =
+        '<p style="padding:60px;text-align:center;color:#999">Produto não encontrado. <a href="categoria.html" style="color:var(--verde)">Ver todos os produtos</a></p>';
+      return;
+    }
+
+    document.title = prod.nome + ' — SG Bichos';
+    document.getElementById('bc-nome').textContent = prod.nome;
+    const catLabel = categorias.find(c => c.id === prod.categoria)?.label || prod.categoria;
+    const bcCat = document.getElementById('bc-cat');
+    bcCat.textContent = catLabel;
+    bcCat.href = `categoria.html?cat=${prod.categoria}`;
+
+    let detailQty = 1;
+    document.getElementById('product-detail').innerHTML = `
+      <div class="product-gallery">
+        <div class="product-main-img">
+          <img src="${prod.imagem}" alt="${prod.nome}" id="main-img"
+               onerror="this.src='${placeholder}'">
+        </div>
+      </div>
+      <div class="product-info">
+        <div class="product-info-cat">${catLabel}</div>
+        <h1>${prod.nome}</h1>
+        <div class="product-info-price">R$ ${fmtPreco(prod.preco)}</div>
+        <p class="product-info-desc">${prod.descricao}</p>
+        <div class="product-qty-row">
+          <div class="qty-control">
+            <button class="qty-btn" onclick="changeDetailQty(-1)" aria-label="Diminuir">−</button>
+            <span class="qty-num" id="detail-qty">1</span>
+            <button class="qty-btn" onclick="changeDetailQty(+1)" aria-label="Aumentar">+</button>
+          </div>
+          <span style="font-size:0.9rem;color:#666">un.</span>
+        </div>
+        <div class="product-actions-full">
+          <button class="btn-full verde" onclick="addDetailToCart()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+            Adicionar ao Carrinho
+          </button>
+          <button class="btn-full wpp" onclick="buyProductWhatsApp(${prod.id})">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.975-1.306A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2"/>
+            </svg>
+            Comprar via WhatsApp
+          </button>
+        </div>
+        <div style="background:var(--bege);border-radius:12px;padding:16px;font-size:0.85rem;color:#666;line-height:1.7;margin-top:8px">
+          🚚 <strong>Entrega para Curitiba e região</strong> — Consulte prazo no WhatsApp<br>
+          🔒 <strong>Compra 100% segura</strong> — Pedido finalizado no WhatsApp<br>
+          💬 <strong>Dúvidas?</strong> Fale com nossa equipe agora mesmo
+        </div>
+      </div>
+    `;
+
+    window.changeDetailQty = function(delta) {
+      detailQty = Math.max(1, detailQty + delta);
+      document.getElementById('detail-qty').textContent = detailQty;
+    };
+
+    window.addDetailToCart = function() {
+      for (let i = 0; i < detailQty; i++) addToCart(prod.id);
+      openCart();
+    };
+
+    const related = produtos.filter(p => p.categoria === prod.categoria && p.id !== prod.id).slice(0, 4);
+    const relGrid = document.getElementById('related-grid');
+    if (relGrid) {
+      relGrid.innerHTML = related.length
+        ? related.map(createProductCard).join('')
+        : '<p style="color:#999;text-align:center;grid-column:1/-1;padding:20px">Sem produtos relacionados.</p>';
+    }
+  })();
+</script>
+</body>
+</html>

@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Sales dashboard for SG Soluções that pulls live data from the Omie ERP API and displays it via a Streamlit web app. Deployed on Streamlit Community Cloud at https://dashboard-vendas-sg-x8vdpxld7umktnnzcktczn.streamlit.app/
+This repository contains two products for SG Bichos (pet shop brand of SG Soluções):
+
+1. **Sales dashboard** (`dashboard.py`) — internal Streamlit app with Omie ERP data. Deployed on Streamlit Community Cloud.
+2. **Loja virtual** (`sg-bichos/`) — public static e-commerce site (HTML/CSS/JS) for deploy on Hostinger. No backend required.
 
 ## Running locally
 
@@ -25,6 +28,7 @@ OMIE_APP_SECRET = "..."
 
 ## Deploying changes
 
+### Dashboard (Streamlit Cloud)
 After editing, commit and push via GitHub Desktop or:
 ```bash
 git add dashboard.py omie_api.py
@@ -33,7 +37,74 @@ git push origin master
 ```
 Streamlit Cloud auto-redeploys within ~2 minutes of a push to `master`.
 
+### Loja virtual (Hostinger)
+Upload the entire `sg-bichos/` folder to `public_html` via Hostinger File Manager or FTP.
+See `sg-bichos/README.md` for full step-by-step instructions.
+
 ## Architecture
+
+---
+
+## Loja Virtual — sg-bichos/
+
+Static HTML/CSS/JS e-commerce site. No server or PHP required. WhatsApp is used instead of a payment gateway.
+
+### Updating the product catalog
+
+Run `gerar_catalogo.py` to pull the live catalog from Omie and regenerate `sg-bichos/js/produtos.js`:
+
+```powershell
+& "C:\Users\orlan\AppData\Local\Python\pythoncore-3.14-64\python.exe" gerar_catalogo.py
+```
+
+### Testing locally
+
+```powershell
+& "C:\Users\orlan\AppData\Local\Python\pythoncore-3.14-64\python.exe" -m http.server 8080
+# Access: http://localhost:8080/sg-bichos/
+```
+
+### File structure
+
+| File | Purpose |
+|---|---|
+| `sg-bichos/index.html` | Home page |
+| `sg-bichos/categoria.html` | Category listing (`?cat=petiscos-secos`) |
+| `sg-bichos/produto.html` | Product detail (`?id=<id>`) |
+| `sg-bichos/contato.html` | Contact page (form opens WhatsApp) |
+| `sg-bichos/css/style.css` | All styles. CSS variables: `--verde #2C1A08`, `--laranja #F5A800` |
+| `sg-bichos/js/produtos.js` | Generated catalog — **do not edit manually**, run `gerar_catalogo.py` instead |
+| `sg-bichos/js/main.js` | Cart, carousel, search, nav rendering, WhatsApp redirect |
+| `sg-bichos/images/logo-sg-bichos.jpg` | Brand logo (copy of `logo.jpg` in repo root) |
+| `sg-bichos/images/produtos/<codigo>.jpg` | Product photos — named after Omie internal code |
+| `gerar_catalogo.py` | Fetches Omie catalog → writes `sg-bichos/js/produtos.js` |
+| `gerar_lista_fotos.py` | Generates `sg-bichos/lista-fotos.csv` with product→filename mapping |
+
+### Catalog filtering
+
+`gerar_catalogo.py` excludes these Omie families (edit `FAMILIAS_EXCLUIR` to change):
+`inativo, laços, Limpeza, Papeis, Coleira, Gravatas, Bonificações, Gargantilhas, Apliques, Bandanas, Adesivos`
+
+Current catalog: **145 produtos** — Petiscos Secos (98), Higiene e Limpeza (30), Ração Seca (17).
+
+### Product photos
+
+- Place photos in `sg-bichos/images/produtos/` named `<codigo_interno>.jpg` (e.g. `PRD00117.jpg`)
+- Run `gerar_lista_fotos.py` to regenerate `lista-fotos.csv` with the full product→filename mapping
+- Missing photos fall back to a branded placeholder automatically
+- Ideal size: 600×600 px
+
+### Home page highlights (vitrine)
+
+Set `"destaque": true` on chosen products in `sg-bichos/js/produtos.js`. If none are marked, the first 8 products are shown. Re-run `gerar_catalogo.py` resets all to `false`, so mark destaques after generating.
+
+### WhatsApp number
+
+Defined in `sg-bichos/js/produtos.js` as `const WHATSAPP = "5541987109563"`.
+
+---
+
+## Dashboard — dashboard.py
 
 Two files do all the work:
 

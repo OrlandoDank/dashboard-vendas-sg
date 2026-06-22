@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contato — SG Bichos</title>
+  <meta name="description" content="Entre em contato com a SG Bichos. Atendimento via WhatsApp, rápido e fácil.">
+  <link rel="icon" type="image/png" href="images/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  🐾 Frete grátis acima de R$150! &nbsp;|&nbsp; Atendimento via <a href="https://wa.me/5541987109563">WhatsApp</a>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="logo">
+      <img src="images/logo-sg-bichos.jpg" alt="SG Bichos"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+      <div class="logo-text" style="display:none">SG <span>Bichos</span></div>
+    </a>
+    <div class="search-bar">
+      <input type="search" id="search-input" placeholder="Buscar produtos..." autocomplete="off">
+      <button class="search-btn" aria-label="Buscar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+      <div class="search-results" id="search-results"></div>
+    </div>
+    <div class="header-actions">
+      <a href="https://wa.me/5541987109563" target="_blank" class="header-btn" aria-label="WhatsApp">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="color:#25D366">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.975-1.306A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2"/>
+        </svg>
+        <span>WhatsApp</span>
+      </a>
+      <button class="header-btn cart-btn" id="cart-btn" aria-label="Carrinho">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span class="cart-badge" style="display:none">0</span>
+        <span>Carrinho</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-item"><a href="index.html" class="nav-link">Início</a></div>
+    <div id="nav-cats" style="display:contents"></div>
+    <div class="nav-item"><a href="contato.html" class="nav-link active">📞 Contato</a></div>
+    <div class="nav-item" style="margin-left:auto">
+      <a href="categoria.html?promo=true" class="nav-link" style="color:#F5A800">🔥 Promoções</a>
+    </div>
+  </div>
+</nav>
+
+<!-- PAGE HERO -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="breadcrumb">
+      <a href="index.html">Início</a>
+      <span>›</span>
+      <span>Contato</span>
+    </div>
+    <h1>Fale Conosco</h1>
+    <p>Estamos aqui para ajudar você e seu pet!</p>
+  </div>
+</div>
+
+<!-- CONTACT LAYOUT -->
+<div class="contact-layout">
+  <div class="contact-info">
+    <h2>Atendimento rápido pelo WhatsApp</h2>
+    <p>Preferimos atender pelo WhatsApp para dar uma resposta mais rápida e personalizada. Envie sua dúvida, pedido ou sugestão — nossa equipe responde em minutos!</p>
+
+    <div class="contact-item">
+      <div class="contact-item-icon">📞</div>
+      <div>
+        <strong>WhatsApp</strong>
+        <span>(41) 98710-9563</span>
+      </div>
+    </div>
+
+    <div class="contact-item" id="horarios">
+      <div class="contact-item-icon">🕐</div>
+      <div>
+        <strong>Horário de atendimento</strong>
+        <span>Segunda a Sexta: 8h às 18h<br>Sábado: 8h às 12h</span>
+      </div>
+    </div>
+
+    <div class="contact-item" id="entrega">
+      <div class="contact-item-icon">🚚</div>
+      <div>
+        <strong>Entrega</strong>
+        <span>Curitiba e Região Metropolitana<br>Consulte prazo e valor no WhatsApp</span>
+      </div>
+    </div>
+
+    <div class="contact-item">
+      <div class="contact-item-icon">📍</div>
+      <div>
+        <strong>Localização</strong>
+        <span>Curitiba – PR</span>
+      </div>
+    </div>
+
+    <div style="margin-top:28px">
+      <a href="https://wa.me/5541987109563?text=Ol%C3%A1!%20Vim%20pelo%20site%20SG%20Bichos%20e%20gostaria%20de%20ajuda."
+         target="_blank"
+         style="display:inline-flex;align-items:center;gap:10px;background:#25D366;color:#fff;padding:14px 28px;border-radius:50px;font-weight:700;font-size:1rem;transition:background 0.2s"
+         onmouseover="this.style.background='#1da851'"
+         onmouseout="this.style.background='#25D366'">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.975-1.306A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2"/>
+        </svg>
+        Iniciar conversa no WhatsApp
+      </a>
+    </div>
+  </div>
+
+  <div class="contact-form">
+    <h3>Enviar mensagem</h3>
+    <p style="font-size:0.85rem;color:#666;margin-bottom:20px">
+      Preencha abaixo e clique em enviar — abriremos o WhatsApp com sua mensagem pronta!
+    </p>
+    <form id="contact-form" onsubmit="enviarContato(event)">
+      <div class="form-group">
+        <label for="nome">Seu nome *</label>
+        <input type="text" id="nome" name="nome" placeholder="Como podemos te chamar?" required>
+      </div>
+      <div class="form-group">
+        <label for="assunto">Assunto</label>
+        <select id="assunto" name="assunto">
+          <option value="Pedido">Fazer um pedido</option>
+          <option value="Dúvida sobre produto">Dúvida sobre produto</option>
+          <option value="Prazo/entrega">Prazo e entrega</option>
+          <option value="Outro">Outro assunto</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="mensagem">Mensagem *</label>
+        <textarea id="mensagem" name="mensagem" placeholder="Como podemos ajudar você e seu pet?" required></textarea>
+      </div>
+      <button type="submit" style="width:100%;padding:14px;border-radius:12px;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;background:#25D366;color:#fff;border:none;cursor:pointer;transition:background 0.2s"
+              onmouseover="this.style.background='#1da851'" onmouseout="this.style.background='#25D366'">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.975-1.306A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2"/>
+        </svg>
+        Enviar pelo WhatsApp
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-main">
+    <div class="footer-brand">
+      <div class="logo-text">SG <span style="color:var(--laranja)">Bichos</span></div>
+      <p>Pet shop especializado em produtos premium para seu pet.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Categorias</h4>
+      <ul>
+        <li><a href="categoria.html?cat=caes">Cães</a></li>
+        <li><a href="categoria.html?cat=gatos">Gatos</a></li>
+        <li><a href="categoria.html?cat=passaros">Pássaros</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Contato</h4>
+      <ul>
+        <li><a href="https://wa.me/5541987109563" target="_blank">WhatsApp</a></li>
+        <li><a href="contato.html">Fale Conosco</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Horários</h4>
+      <ul>
+        <li style="color:rgba(255,255,255,0.6);font-size:0.85rem">Seg–Sex: 8h–18h</li>
+        <li style="color:rgba(255,255,255,0.6);font-size:0.85rem">Sáb: 8h–12h</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2025 SG Bichos — Todos os direitos reservados</div>
+</footer>
+
+<!-- SIDE CART -->
+<div class="cart-overlay" id="cart-overlay"></div>
+<aside class="cart-panel" id="cart-panel">
+  <div class="cart-header">
+    <h3>🛒 Meu Carrinho</h3>
+    <button class="cart-close" id="cart-close" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="cart-items" id="cart-items"></div>
+  <div class="cart-footer">
+    <div class="cart-total-row">
+      <span class="cart-total-label">Total</span>
+      <span class="cart-total-value" id="cart-total">R$ 0,00</span>
+    </div>
+    <button class="btn-checkout" id="btn-checkout">💬 Pedir via WhatsApp</button>
+    <button class="btn-clear" id="btn-clear-cart">🗑 Limpar carrinho</button>
+  </div>
+</aside>
+
+<!-- WHATSAPP FLOAT -->
+<a href="https://wa.me/5541987109563" target="_blank" class="wpp-float" aria-label="WhatsApp">
+  <span class="wpp-tooltip">Falar no WhatsApp</span>
+  <svg viewBox="0 0 24 24" fill="white" width="30" height="30">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.975-1.306A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2"/>
+  </svg>
+</a>
+
+<script src="js/produtos.js"></script>
+<script src="js/main.js"></script>
+<script>
+  function enviarContato(e) {
+    e.preventDefault();
+    const nome     = document.getElementById('nome').value.trim();
+    const assunto  = document.getElementById('assunto').value;
+    const mensagem = document.getElementById('mensagem').value.trim();
+    if (!nome || !mensagem) return;
+    const texto = `Olá! Meu nome é *${nome}*.\n\n*Assunto:* ${assunto}\n\n${mensagem}`;
+    window.open(`https://wa.me/5541987109563?text=${encodeURIComponent(texto)}`, '_blank');
+  }
+</script>
+</body>
+</html>
