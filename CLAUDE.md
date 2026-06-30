@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-This repository contains two products for SG Bichos (pet shop brand of SG Soluções):
+This repository contains three products for SG Bichos (pet shop brand of SG Soluções):
 
-1. **Sales dashboard** (`dashboard.py`) — internal Streamlit app with Omie ERP data. Deployed on Streamlit Community Cloud.
-2. **Loja virtual** (`sg-bichos/`) — public static e-commerce site (HTML/CSS/JS) for deploy on Hostinger. No backend required.
+1. **Sales dashboard** (`dashboard.py`) — internal Streamlit app with Omie ERP data. Deployed on Streamlit Community Cloud. Port 8501.
+2. **CFO dashboard** (`dashboard_cfo.py`) — strategic financial planning dashboard. Local only (port 8502). Do NOT modify `dashboard.py` when working on CFO features.
+3. **Loja virtual** (`sg-bichos/`) — public static e-commerce site (HTML/CSS/JS) for deploy on Hostinger. No backend required.
 
 ## Running locally
 
@@ -15,9 +16,11 @@ This repository contains two products for SG Bichos (pet shop brand of SG Soluç
 # Install dependencies
 & "C:\Users\orlan\AppData\Local\Python\pythoncore-3.14-64\python.exe" -m pip install -r requirements.txt
 
-# Start the dashboard
-cd "C:\Users\orlan\Dropbox\Claude assist\Codigo"
+# Sales dashboard (operacional)
 & "C:\Users\orlan\AppData\Local\Python\pythoncore-3.14-64\python.exe" -m streamlit run dashboard.py --server.port 8501
+
+# CFO dashboard (planejamento financeiro)
+& "C:\Users\orlan\AppData\Local\Python\pythoncore-3.14-64\python.exe" -m streamlit run dashboard_cfo.py --server.port 8502
 ```
 
 Credentials are loaded from `.streamlit/secrets.toml` locally (gitignored). See `.streamlit/secrets.toml` format:
@@ -109,10 +112,11 @@ Defined in `sg-bichos/js/produtos.js` as `const WHATSAPP = "5541987109563"`.
 Two files do all the work:
 
 **`omie_api.py`** — data layer. All Omie API calls live here. Key functions:
-- `carregar_dados()` — single entry point called by the dashboard; returns an 8-tuple: `(df_pedidos, df_linhas, df_clientes, df_ind, df_prod, df_boletos, saldo_cash, df_pagar)`
+- `carregar_dados()` — single entry point called by the dashboard; returns a 9-tuple: `(df_pedidos, df_linhas, df_clientes, df_ind, df_prod, df_boletos, saldo_cash, df_pagar, df_receber)`
 - `_paginar()` — generic paginator for all Omie list endpoints (50 records/page)
+- `buscar_pedidos_e_linhas()` — fetches orders filtered by `infoCadastro`: only `faturado=S`, excludes `cancelado=S` and `devolvido=S`. The `etapa` field is NOT used for filtering (it's a custom workflow stage, not a reliable status indicator).
 - `calcular_indicadores()` — left-joins all clients against order history; clients with no orders get `dias_sem_comprar=9999`
-- `calcular_produtos()` — aggregates order line items and merges CMC costs from the spreadsheet by normalised description (uppercase strip)
+- `calcular_produtos()` — aggregates order line items, filters out `FAMILIAS_EXCLUIR` (laços, adesivos, limpeza, etc.) via `buscar_catalogo_produtos()`, then merges CMC costs using `_normalizar_desc()` which handles HTML entities (`&quot;`→`"`), removes accents and strips `(ZOOMIES)` suffix before matching
 - `carregar_cmc_planilha()` — reads `Custos.xlsx` on every call (never cached) so spreadsheet updates are picked up immediately
 - `buscar_contas_pagar()` — fetches accounts payable from `financas/contapagar/` → `ListarContasPagar`; returns only ABERTO and ATRASADO (skips PAGO and CANCELADO)
 
@@ -149,11 +153,39 @@ Two files do all the work:
 | Overdue boletos | `financas/contareceber/` → `ListarContasReceber`, filtered by `status_titulo == "ATRASADO"` |
 | Accounts payable | `financas/contapagar/` → `ListarContasPagar`, filtered to ABERTO + ATRASADO |
 
+## CFO Dashboard — dashboard_cfo.py
+
+Separate from `dashboard.py`. Never edit `dashboard.py` when working on CFO features.
+
+**Structure:**
+- **Aba 1 — Painel Financeiro:** KPIs atuais, projeção Jul-Dez/2026, composição de receita por unidade, análise de produtos (Top 10 margem, Top 10 valor vendido, tabela completa)
+- **Aba 2 — Plano de Ação:** GAP analysis, 4 alavancas financeiras, plano de publicidade por unidade (B&T / Distribuidora / Lojas), checklist de execução
+
+**Inputs manuais (sidebar):**
+- Receita de cada loja de condomínio (5 lojas — não estão no Omie)
+- Receita da B&T Loja de acessórios
+- Parâmetros de crescimento por unidade (sliders)
+- Total de despesas fixas
+
+**8 fontes de receita do grupo:**
+1. Distribuidora (B2B) — lida do Omie automaticamente
+2. B&T Serviço — R$ 7.840/mês base, 90% margem
+3. B&T Loja Acessórios — manual, R$ 100 atual, R$ 20k capacidade
+4. Flex (condo) — manual, R$ 2.000 atual
+5. Boutique do Dog (condo) — manual, R$ 1.000 atual (loja variada)
+6. Cambirella (condo) — manual, R$ 500 atual
+7. Castellamare (condo) — manual, R$ 500 atual
+8. Cozensa (condo) — manual, R$ 500 atual
+
+**Projeção configurada para:** crescimento 8%/mês dist. + B&T svc; INCOFAP extra R$ 4.500/mês; retirada progressiva R$ 0→R$ 18k em Dez/2026.
+
 ## Important constraints
 
-- **CMC matching**: product descriptions from the API are matched against the spreadsheet by normalised uppercase description. Format in spreadsheet is `"CODE - DESCRIPTION (UNIT)"` — the regex `^\S+\s*-\s*(.+?)\s*\(\w+\)$` extracts the description part. If a product's margin shows `—`, its description doesn't match any row in `Custos.xlsx`.
+- **CMC matching**: uses `_normalizar_desc()` on both sides before merging — removes HTML entities (`&quot;`→`"`), strips accents via NFKD, removes `(ZOOMIES)` brand suffix, uppercases. Format in spreadsheet is `"CODE - DESCRIPTION (UNIT)"` — the regex `^\S+\s*-\s*(.+?)\s*\(\w+\)$` extracts the description part. If a product's margin shows `—`, its description doesn't match any row in `Custos.xlsx` even after normalization.
+- **Order filtering**: `buscar_pedidos_e_linhas()` uses `infoCadastro.faturado/cancelado/devolvido` fields — NOT `etapa`. The `etapa` field is a custom workflow stage configured per company and is unreliable as a status filter. Cancelled orders have `cancelado=S`; use this field exclusively.
+- **Product family filtering**: `calcular_produtos()` calls `buscar_catalogo_produtos()` and excludes families in `FAMILIAS_EXCLUIR` (laços, adesivos, limpeza, papéis, coleira, gravatas, bonificações, gargantilhas, apliques, bandanas, inativo). Same list as `gerar_catalogo.py`.
 - **CMC must always be read alongside the Omie API**: every data refresh must call `carregar_cmc_planilha()` together with the API calls — never skip it or cache it independently. `carregar_dados()` already enforces this by calling both in the same function. Do not refactor this in a way that allows the API data to be returned without the CMC values from the spreadsheet.
-- **Omie API has no CMC/stock-cost endpoint** — the `produtos/estoque/` endpoint returns 404 on this account plan. All cost data must come from the spreadsheet.
+- **Omie API has no CMC/stock-cost endpoint** — the `produtos/estoque/`, `produtos/cmv/`, `produtos/posicaoestoque/` and all stock/CMV-related endpoints return 404 on this account plan. All cost data must come from `Custos.xlsx`. Do not retry these endpoints — confirmed blocked as of Jul/2026.
 - **Color coding** used consistently throughout: green < 30 days, yellow 30–60 days, red > 60 days (applied to `dias_sem_comprar` for clients and `dias_atraso` for boletos; for margins: green ≥ 30%, yellow ≥ 10%, red < 10%; for contas a pagar: red = ATRASADO).
 - **Supplier name lookup**: `buscar_contas_pagar()` tries `nome_fornecedor` and `razao_social` fields from the Omie response. If neither is present, the dashboard merges `df_pagar` with `df_cli` on `codigo_fornecedor == codigo_cliente` to resolve the name. Suppliers not registered as clients will still show as a numeric code.
 - **Updating `Custos.xlsx`**: export fresh report from Omie, save as `Custos.xlsx` in repo root, commit and push — dashboard picks it up on next data refresh.

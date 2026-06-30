@@ -676,11 +676,10 @@ elif pagina == "💰  Financeiro":
     df_pr = (
         df_ped.merge(df_cli[["codigo_cliente","nome_cliente"]], on="codigo_cliente", how="left")
         .sort_values("data_pedido", ascending=False).head(50)
-    )[["numero_pedido","data_pedido","nome_cliente","valor_total","quantidade_itens","etapa"]].copy()
-    df_pr.columns=["Nº Pedido","Data","Cliente","Valor (R$)","Itens","Etapa"]
+    )[["numero_pedido","data_pedido","nome_cliente","valor_total","quantidade_itens"]].copy()
+    df_pr.columns=["Nº Pedido","Data","Cliente","Valor (R$)","Itens"]
     df_pr["Data"]=pd.to_datetime(df_pr["Data"]).dt.strftime("%d/%m/%Y")
     df_pr["Valor (R$)"]=df_pr["Valor (R$)"].apply(brl)
-    etapa_map={"10":"Novo","20":"Em análise","30":"Aprovado","40":"Em produção","50":"Pronto","60":"Enviado","70":"Entregue"}
-    df_pr["Etapa"]=df_pr["Etapa"].map(etapa_map).fillna(df_pr["Etapa"])
+    df_pr["Etapa"]="Faturado"
     st.dataframe(df_pr, use_container_width=True, hide_index=True, height=420)
     st.markdown('</div>', unsafe_allow_html=True)

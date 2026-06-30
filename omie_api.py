@@ -130,10 +130,21 @@ def buscar_clientes() -> pd.DataFrame:
 # ── PEDIDOS + LINHAS ──────────────────────────────────────────────────────────
 
 def buscar_pedidos_e_linhas() -> tuple:
+    """Considera apenas pedidos faturados e não cancelados/devolvidos.
+    O campo 'etapa' não é confiável como indicador de cancelamento (é uma etapa
+    de fluxo configurável); o status real vem de infoCadastro.faturado/cancelado."""
     raw = _paginar("produtos/pedido/", "ListarPedidos", {}, "pedido_venda_produto")
     pedidos = []
     linhas  = []
     for p in raw:
+        info = p.get("infoCadastro", {})
+        if info.get("cancelado") == "S":
+            continue
+        if info.get("devolvido") == "S":
+            continue
+        if info.get("faturado") != "S":
+            continue
+
         cab   = p.get("cabecalho", {})
         total = p.get("total_pedido", {})
         num   = cab.get("numero_pedido")
@@ -201,6 +212,35 @@ def buscar_catalogo_produtos() -> pd.DataFrame:
 
 # ── AGREGAÇÕES DE PRODUTOS ────────────────────────────────────────────────────
 
+# Mesmas famílias excluídas do catálogo da loja virtual (ver gerar_catalogo.py)
+FAMILIAS_EXCLUIR = {
+    "inativo", "lacos", "limpeza", "papeis", "coleira", "gravatas",
+    "bonificacoes", "bonificacao", "gargantilhas", "apliques", "bandanas", "adesivos",
+}
+
+
+def _slugify_simples(texto: str) -> str:
+    import unicodedata, re
+    texto = unicodedata.normalize("NFKD", str(texto))
+    texto = texto.encode("ascii", "ignore").decode("ascii")
+    texto = texto.lower().strip()
+    texto = re.sub(r"[^a-z0-9\s-]", "", texto)
+    return re.sub(r"[\s_-]+", "", texto)
+
+
+def _normalizar_desc(texto: str) -> str:
+    """Normaliza descrição para match: remove acentos, HTML entities, marca (ZOOMIES),
+    converte para maiúsculas e remove espaços extras."""
+    import unicodedata, re, html
+    texto = html.unescape(str(texto))                          # &quot; → "
+    texto = unicodedata.normalize("NFKD", texto)
+    texto = texto.encode("ascii", "ignore").decode("ascii")    # remove acentos
+    texto = re.sub(r"\(ZOOMIES\)", "", texto, flags=re.IGNORECASE)
+    texto = texto.upper().strip()
+    texto = re.sub(r"\s+", " ", texto)
+    return texto
+
+
 def calcular_produtos(df_linhas: pd.DataFrame, df_cmc: pd.DataFrame) -> pd.DataFrame:
     if df_linhas.empty:
         return pd.DataFrame()
@@ -217,12 +257,26 @@ def calcular_produtos(df_linhas: pd.DataFrame, df_cmc: pd.DataFrame) -> pd.DataF
         .reset_index()
     )
 
-    # Normalizar descrição para match com planilha
-    resumo["descricao_norm"] = resumo["descricao"].str.strip().str.upper()
+    # Exclui famílias irrelevantes para análise comercial (laços, limpeza, adesivos, etc.)
+    try:
+        df_cat = buscar_catalogo_produtos()
+        if not df_cat.empty:
+            df_cat["familia_slug"] = df_cat["familia"].apply(_slugify_simples)
+            familias_bloqueadas = set(
+                df_cat.loc[df_cat["familia_slug"].isin(FAMILIAS_EXCLUIR), "codigo_produto"]
+            )
+            resumo = resumo[~resumo["codigo_produto"].isin(familias_bloqueadas)].copy()
+    except Exception:
+        pass
+
+    # Normalizar descrição para match com planilha (remove acentos, HTML entities, (ZOOMIES))
+    resumo["descricao_norm"] = resumo["descricao"].apply(_normalizar_desc)
 
     if not df_cmc.empty:
+        df_cmc_match = df_cmc.copy()
+        df_cmc_match["descricao_norm"] = df_cmc_match["descricao_limpa"].apply(_normalizar_desc)
         resumo = resumo.merge(
-            df_cmc.rename(columns={"descricao_limpa": "descricao_norm"}),
+            df_cmc_match[["descricao_norm", "cmc_unitario"]],
             on="descricao_norm", how="left"
         )
         resumo["cmc_unitario"] = resumo["cmc_unitario"].fillna(0)
